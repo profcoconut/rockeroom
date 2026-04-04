@@ -80,7 +80,9 @@ final class LiveE2EWorkflowTests: XCTestCase {
         )
         staleHint.launch()
 
-        XCTAssertTrue(staleHint.staticTexts["refreshHintText"].waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            staleHint.staticTexts["Refresh available. Run Benchmark again to update stale evidence."].waitForExistence(timeout: 8)
+        )
         staleHint.terminate()
 
         let refreshed = configuredApp(
@@ -95,18 +97,13 @@ final class LiveE2EWorkflowTests: XCTestCase {
         XCTAssertTrue(
             refreshed.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 8)
         )
-        XCTAssertFalse(refreshed.staticTexts["refreshHintText"].exists)
+        XCTAssertFalse(refreshed.staticTexts["Refresh available. Run Benchmark again to update stale evidence."].exists)
     }
 
     // MARK: - Destination-Aware Routing Scenario Contract Tests
 
-    /// Verifies the app handles autoModeApply gracefully without crashing.
-    /// The routing scenario is a no-op placeholder until the routing engine is implemented.
-    /// This test first imports the subscription using benchmark-home, then re-launches
-    /// with the routing scenario to verify the runner degrades to no-op without state corruption.
     @MainActor
-    func testScenarioDrivenAutoModeApplyGracefullyDegrades() throws {
-        // First, import the subscription to establish baseline state.
+    func testScenarioDrivenAutoModeApplyRestoresRecommendedHomeState() throws {
         let importSuite = "ui-live-e2e-auto-mode-apply-import"
         let importApp = configuredApp(
             storageSuite: importSuite,
@@ -115,10 +112,11 @@ final class LiveE2EWorkflowTests: XCTestCase {
             demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
         )
         importApp.launch()
-        XCTAssertTrue(importApp.navigationBars["Home"].waitForExistence(timeout: 12))
+        XCTAssertTrue(
+            importApp.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 12)
+        )
         importApp.terminate()
 
-        // Re-launch with the routing scenario — runner produces no actions, but must not crash.
         let routingApp = configuredApp(
             storageSuite: importSuite,
             scenario: "auto-mode-apply",
@@ -126,14 +124,22 @@ final class LiveE2EWorkflowTests: XCTestCase {
             demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
         )
         routingApp.launch()
-        // No assertion on specific UI — the contract is that the app does not crash
-        // and does not corrupt prior state. Terminate cleanly to confirm no crash.
-        routingApp.terminate()
+
+        XCTAssertTrue(routingApp.staticTexts["recommendationCard"].waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            routingApp.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Measured")).firstMatch.waitForExistence(timeout: 8)
+        )
+        XCTAssertTrue(
+            routingApp.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 8)
+        )
+        XCTAssertFalse(routingApp.staticTexts["refreshHintText"].exists)
+        XCTAssertFalse(
+            routingApp.staticTexts["Manual selection is active. Unpin it from Expert Console to return to automatic recommendation."].exists
+        )
     }
 
-    /// Verifies the app handles manualModeAdvisory gracefully without crashing.
     @MainActor
-    func testScenarioDrivenManualModeAdvisoryGracefullyDegrades() throws {
+    func testScenarioDrivenManualModeAdvisoryOpensExpertConsole() throws {
         let importSuite = "ui-live-e2e-manual-mode-advisory-import"
         let importApp = configuredApp(
             storageSuite: importSuite,
@@ -142,7 +148,9 @@ final class LiveE2EWorkflowTests: XCTestCase {
             demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
         )
         importApp.launch()
-        XCTAssertTrue(importApp.navigationBars["Home"].waitForExistence(timeout: 12))
+        XCTAssertTrue(
+            importApp.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 12)
+        )
         importApp.terminate()
 
         let routingApp = configuredApp(
@@ -152,79 +160,81 @@ final class LiveE2EWorkflowTests: XCTestCase {
             demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
         )
         routingApp.launch()
-        routingApp.terminate()
+
+        XCTAssertTrue(routingApp.staticTexts["Expert Console"].waitForExistence(timeout: 12))
+        XCTAssertTrue(routingApp.staticTexts["Ranked candidates"].waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            routingApp.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pin ")).firstMatch.waitForExistence(timeout: 8)
+        )
     }
 
-    /// Verifies the app handles overrideOrPin gracefully without crashing.
     @MainActor
-    func testScenarioDrivenOverrideOrPinGracefullyDegrades() throws {
-        let importSuite = "ui-live-e2e-override-or-pin-import"
-        let importApp = configuredApp(
-            storageSuite: importSuite,
-            scenario: "benchmark-home",
-            resetStorage: true,
-            demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
-        )
-        importApp.launch()
-        XCTAssertTrue(importApp.navigationBars["Home"].waitForExistence(timeout: 12))
-        importApp.terminate()
-
-        let routingApp = configuredApp(
-            storageSuite: importSuite,
+    func testScenarioDrivenOverrideOrPinRestoresPinnedHomeState() throws {
+        let app = configuredApp(
+            storageSuite: "ui-live-e2e-override-or-pin",
             scenario: "override-or-pin",
-            resetStorage: false,
-            demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
-        )
-        routingApp.launch()
-        routingApp.terminate()
-    }
-
-    /// Verifies the app handles staleOrRefresh gracefully without crashing.
-    @MainActor
-    func testScenarioDrivenStaleOrRefreshGracefullyDegrades() throws {
-        let importSuite = "ui-live-e2e-stale-or-refresh-import"
-        let importApp = configuredApp(
-            storageSuite: importSuite,
-            scenario: "benchmark-home",
             resetStorage: true,
             demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
         )
-        importApp.launch()
-        XCTAssertTrue(importApp.navigationBars["Home"].waitForExistence(timeout: 12))
-        importApp.terminate()
+        app.launch()
+
+        XCTAssertTrue(app.buttons["benchmarkButton"].waitForExistence(timeout: 12))
+        XCTAssertTrue(app.staticTexts["Best current setup"].waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            app.staticTexts["Pinned provider active. Manual selection stays in effect until you unpin it in Expert Console."]
+                .waitForExistence(timeout: 8)
+        )
+        XCTAssertTrue(
+            app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 8)
+        )
+    }
+
+    @MainActor
+    func testScenarioDrivenStaleOrRefreshRestoresStaleHomeState() throws {
+        let suite = "ui-live-e2e-stale-or-refresh"
+        let seeded = configuredApp(
+            storageSuite: suite,
+            scenario: "benchmark-home",
+            resetStorage: true,
+            nowUnix: 100,
+            demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
+        )
+        seeded.launch()
+        XCTAssertTrue(
+            seeded.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 12)
+        )
+        seeded.terminate()
 
         let routingApp = configuredApp(
-            storageSuite: importSuite,
+            storageSuite: suite,
             scenario: "stale-or-refresh",
             resetStorage: false,
+            nowUnix: 2_000,
             demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
         )
         routingApp.launch()
-        routingApp.terminate()
+
+        XCTAssertTrue(routingApp.buttons["benchmarkButton"].waitForExistence(timeout: 12))
+        XCTAssertTrue(routingApp.staticTexts["Best current setup"].waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            routingApp.staticTexts["Refresh available. Run Benchmark again to update stale evidence."].waitForExistence(timeout: 8)
+        )
     }
 
-    /// Verifies the app handles failedReassignment gracefully without crashing.
     @MainActor
-    func testScenarioDrivenFailedReassignmentGracefullyDegrades() throws {
-        let importSuite = "ui-live-e2e-failed-reassignment-import"
-        let importApp = configuredApp(
-            storageSuite: importSuite,
-            scenario: "benchmark-home",
-            resetStorage: true,
-            demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
-        )
-        importApp.launch()
-        XCTAssertTrue(importApp.navigationBars["Home"].waitForExistence(timeout: 12))
-        importApp.terminate()
-
-        let routingApp = configuredApp(
-            storageSuite: importSuite,
+    func testScenarioDrivenFailedReassignmentStopsOnRecoverableFailureState() throws {
+        let app = configuredApp(
+            storageSuite: "ui-live-e2e-failed-reassignment",
             scenario: "failed-reassignment",
-            resetStorage: false,
+            resetStorage: true,
+            demoTunnelFailure: true,
             demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
         )
-        routingApp.launch()
-        routingApp.terminate()
+        app.launch()
+
+        XCTAssertTrue(app.buttons["benchmarkButton"].waitForExistence(timeout: 12))
+        XCTAssertTrue(app.staticTexts["Could not start the RockeRoom tunnel."].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["benchmarkButton"].exists)
     }
 
     // MARK: - Helper

@@ -1,309 +1,198 @@
 import XCTest
+
 @testable import SharedKit
 
-/// Contract tests for the destination routing semantics.
-///
-/// These tests define the expected visible fields and behavior for routing state:
-/// current destination performance, current strategy, current provider, optimization
-/// opportunity, confidence, and hold/uncertainty semantics.
-///
-/// Auto Mode vs Manual Mode semantics are defined here in tests before any
-/// production implementation exists, so later routing-engine work has a stable
-/// contract to satisfy.
-///
-/// Test-only types (RoutingStrategy, RoutingConfidence, RoutingQuality) define
-/// the vocabulary. Production types will replace these in later sprints.
+/// Contract tests for the current routing semantics that later destination-aware work
+/// must preserve. These tests intentionally assert through production seams rather than
+/// test-local routing models.
 final class DestinationRoutingContractTests: XCTestCase {
-    // MARK: - Routing State Vocabulary
-
-    /// The routing strategy in effect.
-    enum RoutingStrategy: Equatable {
-        case auto   // RockeRoom may auto-apply better routes
-        case manual // RockeRoom only advises; user must apply manually
-    }
-
-    /// Confidence level for routing decisions.
-    enum RoutingConfidence: Equatable {
-        case high
-        case medium
-        case low
-        case unknown
-    }
-
-    /// Measured quality for the current routing decision.
-    struct RoutingQuality: Equatable {
-        let latencyMs: Int
-        let jitterMs: Int
-        let packetLossPct: Double
-        let throughputMbps: Int
-    }
-
-    /// The full routing state as visible to the user.
-    struct RoutingState: Equatable {
-        let strategy: RoutingStrategy
-        let providerID: String
-        let providerLabel: String
-        let quality: RoutingQuality
-        let confidence: RoutingConfidence
-        let freshness: Double  // 0.0–1.0, 1.0 = fresh
-        let optimizationOpportunity: OptimizationOpportunity?
-        let holdReason: HoldReason?
-    }
-
-    enum OptimizationOpportunity: Equatable {
-        case betterRouteAvailable(newProviderID: String, newProviderLabel: String, delta: String)
-        case noOpportunity
-    }
-
-    enum HoldReason: Equatable {
-        case pinned
-        case staleEvidence
-        case lowConfidence
-        case insignificantDelta
-        case notApplicable
-    }
-
-    // MARK: - Helper: make a routing state
-
-    func makeState(
-        strategy: RoutingStrategy = .auto,
-        providerID: String = "fast",
-        providerLabel: String = "Fast Relay",
-        quality: RoutingQuality = RoutingQuality(latencyMs: 42, jitterMs: 4, packetLossPct: 0.2, throughputMbps: 182),
-        confidence: RoutingConfidence = .high,
-        freshness: Double = 0.95,
-        optimizationOpportunity: OptimizationOpportunity? = nil,
-        holdReason: HoldReason? = nil
-    ) -> RoutingState {
-        RoutingState(
-            strategy: strategy,
-            providerID: providerID,
-            providerLabel: providerLabel,
-            quality: quality,
-            confidence: confidence,
-            freshness: freshness,
-            optimizationOpportunity: optimizationOpportunity,
-            holdReason: holdReason
-        )
-    }
-
-    // MARK: - Happy Path
-
-    func testRoutingStateExpressesStrategyProviderAndQuality() {
-        let state = makeState(providerID: "jp-01", providerLabel: "Japan 01")
-        XCTAssertEqual(state.strategy, .auto)
-        XCTAssertEqual(state.providerID, "jp-01")
-        XCTAssertEqual(state.providerLabel, "Japan 01")
-        XCTAssertEqual(state.quality.latencyMs, 42)
-        XCTAssertEqual(state.quality.throughputMbps, 182)
-    }
-
-    func testAutoModeMarksBetterRouteAsApplyCapable() {
-        // When Auto Mode sees a better route, it marks it as apply-capable.
-        let state = makeState(
-            strategy: .auto,
-            confidence: .high,
+    func testRecommendedRouteCarriesCurrentProviderTruthAndProof() {
+        let snapshot = makeSnapshot(
             freshness: 0.95,
-            optimizationOpportunity: .betterRouteAvailable(
-                newProviderID: "hk-01",
-                newProviderLabel: "Hong Kong 01",
-                delta: "-14ms latency"
-            ),
-            holdReason: nil
+            overallConfidence: 0.91,
+            bestScore: 0.95,
+            runnerUpScore: 0.78
         )
+        let recommendationState = RecommendationPolicy().evaluate(snapshot: snapshot, pinState: .none)
 
-        switch state.optimizationOpportunity {
-        case .betterRouteAvailable(let newID, let newLabel, _):
-            XCTAssertEqual(newID, "hk-01")
-            XCTAssertEqual(newLabel, "Hong Kong 01")
-        case .noOpportunity, nil:
-            XCTFail("Expected a better route opportunity in Auto Mode with high confidence and fresh evidence")
+        guard case .recommended(let summary) = recommendationState else {
+            return XCTFail("Expected a recommendation for fresh, confident evidence.")
         }
 
-        XCTAssertNil(state.holdReason, "Auto Mode with high confidence and fresh evidence should not be on hold")
+        XCTAssertEqual(summary.selectedCandidateID, "fast")
+        XCTAssertEqual(summary.confidence, 0.91, accuracy: 0.001)
+        XCTAssertEqual(summary.freshness, 0.95, accuracy: 0.001)
+        XCTAssertEqual(summary.proof.deltas.first?.metricName, "Latency")
+
+        let projection = EvidenceProjection.project(
+            snapshot: snapshot,
+            recommendationState: recommendationState,
+            pinState: .none
+        )
+
+        XCTAssertEqual(projection.primaryState, .current)
+        guard let currentCard = projection.cards.first(where: { $0.markers.contains(.current) }) else {
+            return XCTFail("Expected a current card in the evidence projection.")
+        }
+        XCTAssertEqual(currentCard.candidateID, "fast")
+        XCTAssertEqual(currentCard.markers, [.current, .recommended])
     }
 
-    func testManualModeMarksSameBetterRouteAsAdvisoryOnly() {
-        // Manual Mode surfaces the better route but does NOT mark it as apply-capable.
-        // The user must act on it manually.
-        let state = makeState(
-            strategy: .manual,
-            confidence: .high,
+    func testPinnedOverrideProducesExplicitHoldAndPinnedCurrentCard() {
+        let snapshot = makeSnapshot(
+            freshness: 0.94,
+            overallConfidence: 0.9,
+            bestScore: 0.95,
+            runnerUpScore: 0.78
+        )
+        let pinState = PinState.pinned(candidateID: "stable")
+        let recommendationState = RecommendationPolicy().evaluate(snapshot: snapshot, pinState: pinState)
+
+        guard case .holding(let hold) = recommendationState else {
+            return XCTFail("Expected a hold when a non-best provider is pinned.")
+        }
+
+        XCTAssertEqual(hold.reason, .pinned)
+        XCTAssertNotNil(hold.proof)
+
+        let projection = EvidenceProjection.project(
+            snapshot: snapshot,
+            recommendationState: recommendationState,
+            pinState: pinState
+        )
+
+        guard let currentCard = projection.cards.first(where: { $0.markers.contains(.current) }) else {
+            return XCTFail("Expected a current card in the evidence projection.")
+        }
+        XCTAssertEqual(currentCard.candidateID, "stable")
+        XCTAssertEqual(currentCard.markers, [.current, .pinned])
+    }
+
+    func testStaleEvidenceProducesExplicitHoldAndStaleProjection() {
+        let snapshot = makeSnapshot(
+            freshness: 0.2,
+            overallConfidence: 0.91,
+            bestScore: 0.95,
+            runnerUpScore: 0.78
+        )
+        let recommendationState = RecommendationPolicy(staleFreshnessThreshold: 0.5).evaluate(
+            snapshot: snapshot,
+            pinState: .none
+        )
+
+        guard case .holding(let hold) = recommendationState else {
+            return XCTFail("Expected a hold for stale evidence.")
+        }
+
+        XCTAssertEqual(hold.reason, .staleData)
+        XCTAssertEqual(hold.freshness, 0.2, accuracy: 0.001)
+
+        let projection = EvidenceProjection.project(
+            snapshot: snapshot,
+            recommendationState: recommendationState,
+            pinState: .none
+        )
+
+        XCTAssertEqual(projection.primaryState, .partial)
+        XCTAssertTrue(projection.stateBadges.contains(.stale))
+    }
+
+    func testLowConfidenceProducesExplicitHoldWithoutRecommendationMarker() {
+        let snapshot = makeSnapshot(
             freshness: 0.95,
-            optimizationOpportunity: nil,  // Manual mode does not auto-suggest
-            holdReason: nil
+            overallConfidence: 0.3,
+            bestScore: 0.95,
+            runnerUpScore: 0.78
+        )
+        let recommendationState = RecommendationPolicy(minimumConfidence: 0.8).evaluate(
+            snapshot: snapshot,
+            pinState: .none
         )
 
-        // Manual mode may still expose quality information, but does not offer
-        // an optimization opportunity that RockeRoom would auto-apply.
-        XCTAssertEqual(state.strategy, .manual)
-        XCTAssertNil(state.optimizationOpportunity, "Manual Mode should not present auto-apply optimization opportunities")
-    }
+        guard case .holding(let hold) = recommendationState else {
+            return XCTFail("Expected a hold when confidence is below threshold.")
+        }
 
-    // MARK: - Edge Cases
+        XCTAssertEqual(hold.reason, .lowConfidence)
 
-    func testWeakEvidenceMarksRouteAsHold() {
-        // When evidence is weak (low confidence or stale), Auto Mode holds
-        // rather than recommending a switch.
-        let state = makeState(
-            strategy: .auto,
-            confidence: .low,
-            freshness: 0.4,
-            optimizationOpportunity: nil,
-            holdReason: .lowConfidence
+        let projection = EvidenceProjection.project(
+            snapshot: snapshot,
+            recommendationState: recommendationState,
+            pinState: .none
         )
 
-        XCTAssertEqual(state.holdReason, .lowConfidence)
-        XCTAssertNil(state.optimizationOpportunity, "Low-confidence state should not offer optimization opportunity")
+        guard let currentCard = projection.cards.first(where: { $0.markers.contains(.current) }) else {
+            return XCTFail("Expected a current card in the evidence projection.")
+        }
+        XCTAssertFalse(currentCard.markers.contains(.recommended))
     }
 
-    func testStaleEvidenceMarksRouteAsHold() {
-        let state = makeState(
-            strategy: .auto,
-            confidence: .high,
-            freshness: 0.3,
-            optimizationOpportunity: nil,
-            holdReason: .staleEvidence
-        )
-
-        XCTAssertEqual(state.holdReason, .staleEvidence)
-    }
-
-    func testInsignificantDeltaMarksRouteAsNoOpportunity() {
-        // When the measured gain is too small, it is not marked as an opportunity.
-        // The delta is "within noise" — Auto Mode should not switch for trivial gains.
-        let state = makeState(
-            strategy: .auto,
-            confidence: .high,
+    func testIncoherentRecommendationDegradesProjectionInsteadOfSilentlyDroppingProviderTruth() {
+        let snapshot = makeSnapshot(
             freshness: 0.95,
-            optimizationOpportunity: .noOpportunity,
-            holdReason: .insignificantDelta
+            overallConfidence: 0.91,
+            bestScore: 0.95,
+            runnerUpScore: 0.78
         )
-
-        XCTAssertEqual(state.holdReason, .insignificantDelta)
-    }
-
-    func testPinnedProviderMarksRouteAsOnHold() {
-        // When the user has pinned a provider manually, Auto Mode respects that
-        // and does not switch even when a better route is available.
-        let state = makeState(
-            strategy: .auto,
-            confidence: .high,
-            freshness: 0.95,
-            optimizationOpportunity: nil,  // suppressed by pin
-            holdReason: .pinned
+        let proof = RecommendationPolicy().makeProof(
+            best: snapshot.bestCandidate!,
+            runnerUp: snapshot.runnerUpCandidate,
+            snapshot: snapshot
         )
-
-        XCTAssertEqual(state.holdReason, .pinned)
-    }
-
-    func testMeasuredButNotAppliedIsNotAnError() {
-        // A destination can be measured (quality is available) but not applied
-        // (e.g., because it was measured for a different destination).
-        // This should not be treated as an error — it is normal behavior.
-        let state = makeState(
-            strategy: .manual,
-            confidence: .medium,
-            freshness: 0.7,
-            optimizationOpportunity: nil,
-            holdReason: nil
-        )
-
-        // No hold reason = the state is coherent but no action is recommended
-        XCTAssertNil(state.holdReason)
-        XCTAssertEqual(state.confidence, .medium)
-    }
-
-    // MARK: - Error Paths
-
-    func testMissingStrategyYieldsExplicitDegradedState() {
-        // When strategy is unknown/missing, the state should express this explicitly
-        // rather than defaulting to a behavior that silently misleads the user.
-        let degradedState = makeState(
-            strategy: .auto,  // We test the contract by checking that strategy field exists
-            confidence: .unknown,
-            freshness: 0.0,
-            optimizationOpportunity: nil,
-            holdReason: nil
-        )
-
-        XCTAssertEqual(degradedState.confidence, .unknown)
-        XCTAssertEqual(degradedState.freshness, 0.0, "Unknown freshness should be 0.0")
-    }
-
-    func testMissingProviderInformationYieldsDegradedState() {
-        // When the current provider is unknown, the state should be degraded
-        // and not silently present stale or misleading quality information.
-        let state = RoutingState(
-            strategy: .auto,
-            providerID: "",
-            providerLabel: "Unknown",
-            quality: RoutingQuality(latencyMs: 0, jitterMs: 0, packetLossPct: 0, throughputMbps: 0),
-            confidence: .unknown,
-            freshness: 0.0,
-            optimizationOpportunity: nil,
-            holdReason: nil
-        )
-
-        XCTAssertEqual(state.providerID, "", "Missing provider should be empty string, not a default value")
-        XCTAssertEqual(state.confidence, .unknown, "Missing provider should result in unknown confidence")
-        XCTAssertEqual(state.quality.latencyMs, 0, "Quality should be zeroed when provider is unknown")
-    }
-
-    // MARK: - Contract Integration: Existing Summary Behavior
-
-    func testHomeRecommendationSubtitleReflectsRoutingState() {
-        // The Home surface subtitle should reflect routing state accurately.
-        // This test ensures the routing contract connects to the existing
-        // Home summary language defined in HomeSummaryMetricTests.
-
-        // Auto mode with high confidence and fresh evidence → "Measured recommendation"
-        let recommendedState = makeState(
-            strategy: .auto,
-            confidence: .high,
-            freshness: 0.95,
-            optimizationOpportunity: .betterRouteAvailable(
-                newProviderID: "hk-01",
-                newProviderLabel: "Hong Kong 01",
-                delta: "-14ms"
+        let malformedState = RecommendationState.recommended(
+            RecommendationSummary(
+                selectedCandidateID: "missing",
+                proof: proof,
+                confidence: 0.91,
+                freshness: 0.95
             )
         )
 
-        let recommendationStatus = routingStatusLabel(for: recommendedState)
-        XCTAssertEqual(recommendationStatus, "Measured recommendation")
-
-        // Auto mode on hold → "Measured hold"
-        let holdState = makeState(
-            strategy: .auto,
-            confidence: .high,
-            freshness: 0.4,
-            holdReason: .staleEvidence
+        let projection = EvidenceProjection.project(
+            snapshot: snapshot,
+            recommendationState: malformedState,
+            pinState: .none
         )
-        let holdStatus = routingStatusLabel(for: holdState)
-        XCTAssertEqual(holdStatus, "Measured hold")
 
-        // No benchmark run → "No benchmark run yet"
-        let idleState = makeState(
-            strategy: .auto,
-            confidence: .unknown,
-            freshness: 0.0,
-            holdReason: nil
-        )
-        let idleStatus = routingStatusLabel(for: idleState)
-        XCTAssertEqual(idleStatus, "No benchmark run yet")
+        XCTAssertEqual(projection.primaryState, .degraded)
+        XCTAssertTrue(projection.stateBadges.contains(.degraded))
+        guard let currentCard = projection.cards.first(where: { $0.markers.contains(.current) }) else {
+            return XCTFail("Expected a current card when degrading malformed recommendation state.")
+        }
+        XCTAssertEqual(currentCard.candidateID, "fast")
+        XCTAssertEqual(currentCard.markers, [.current])
     }
 
-    /// Maps RoutingState to the expected homeRecommendationStatus string.
-    private func routingStatusLabel(for state: RoutingState) -> String {
-        if state.freshness == 0.0 && state.confidence == .unknown {
-            return "No benchmark run yet"
-        }
-        if state.holdReason != nil {
-            return "Measured hold"
-        }
-        if state.optimizationOpportunity != nil {
-            return "Measured recommendation"
-        }
-        return "Recommendation unavailable"
+    private func makeSnapshot(
+        freshness: Double,
+        overallConfidence: Double,
+        bestScore: Double,
+        runnerUpScore: Double
+    ) -> ResultSnapshot {
+        ResultSnapshot(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            candidates: [
+                ProbeCandidateResult(
+                    candidateID: "fast",
+                    label: "Fast Relay",
+                    metrics: [ProbeMetric(name: "Latency", value: 120, unit: "ms", betterIsHigher: false)],
+                    score: bestScore,
+                    confidence: overallConfidence,
+                    freshness: freshness
+                ),
+                ProbeCandidateResult(
+                    candidateID: "stable",
+                    label: "Stable Relay",
+                    metrics: [ProbeMetric(name: "Latency", value: 150, unit: "ms", betterIsHigher: false)],
+                    score: runnerUpScore,
+                    confidence: overallConfidence,
+                    freshness: freshness
+                )
+            ],
+            selectedCandidateID: "fast",
+            overallConfidence: overallConfidence,
+            freshness: freshness,
+            isPartial: freshness < 0.5
+        )
     }
 }
