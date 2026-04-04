@@ -106,7 +106,7 @@ final class AutoModeViewModelTests: XCTestCase {
                     ProbeCandidateResult(
                         candidateID: "fast",
                         label: "Fast Relay",
-                        metrics: [ProbeMetric(name: "latency", value: 120, unit: "ms", betterIsHigher: false)],
+                        metrics: [ProbeMetric(name: "Latency", value: 120, unit: "ms", betterIsHigher: false)],
                         score: 0.95,
                         confidence: 0.91,
                         freshness: 0.94
@@ -114,7 +114,7 @@ final class AutoModeViewModelTests: XCTestCase {
                     ProbeCandidateResult(
                         candidateID: "stable",
                         label: "Stable Relay",
-                        metrics: [ProbeMetric(name: "latency", value: 150, unit: "ms", betterIsHigher: false)],
+                        metrics: [ProbeMetric(name: "Latency", value: 150, unit: "ms", betterIsHigher: false)],
                         score: 0.78,
                         confidence: 0.88,
                         freshness: 0.94
@@ -181,7 +181,7 @@ final class AutoModeViewModelTests: XCTestCase {
                     ProbeCandidateResult(
                         candidateID: "fast",
                         label: "Fast Relay",
-                        metrics: [ProbeMetric(name: "latency", value: 120, unit: "ms", betterIsHigher: false)],
+                        metrics: [ProbeMetric(name: "Latency", value: 120, unit: "ms", betterIsHigher: false)],
                         score: 0.95,
                         confidence: 0.91,
                         freshness: 0.95
@@ -189,7 +189,7 @@ final class AutoModeViewModelTests: XCTestCase {
                     ProbeCandidateResult(
                         candidateID: "stable",
                         label: "Stable Relay",
-                        metrics: [ProbeMetric(name: "latency", value: 150, unit: "ms", betterIsHigher: false)],
+                        metrics: [ProbeMetric(name: "Latency", value: 150, unit: "ms", betterIsHigher: false)],
                         score: 0.78,
                         confidence: 0.88,
                         freshness: 0.95

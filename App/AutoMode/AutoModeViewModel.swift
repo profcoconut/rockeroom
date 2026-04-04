@@ -23,6 +23,23 @@ final class AutoModeViewModel: ObservableObject {
     private var subscriptionConfig: SubscriptionConfig?
     @Published private(set) var pinState: PinState = .none
 
+    var hasImportedSubscription: Bool {
+        subscriptionConfig != nil
+    }
+
+    var hasBenchmarkResults: Bool {
+        snapshot?.candidates.isEmpty == false
+    }
+
+    var importErrorMessage: String? {
+        guard case .failed(let message) = status else { return nil }
+        return message
+    }
+
+    var subscriptionDisplayName: String {
+        subscriptionConfig?.subscriptionName ?? "Imported Clash subscription"
+    }
+
     init(
         importer: ClashSubscriptionImporter? = nil,
         adapter: ClashAdapter? = nil,
@@ -124,7 +141,7 @@ final class AutoModeViewModel: ObservableObject {
 
     func optimize() {
         guard let subscriptionConfig else {
-            status = .failed(message: "Import a Clash subscription link before optimizing.")
+            status = .failed(message: "Import a Clash subscription link before running a benchmark.")
             return
         }
 
@@ -189,17 +206,17 @@ final class AutoModeViewModel: ObservableObject {
         case .idle, .evaluating:
             switch status {
             case .running:
-                return "Tunnel running"
+                return hasBenchmarkResults ? "Benchmark complete" : "Tunnel running"
             case .startingTunnel, .optimizing:
-                return "Optimizing current setup"
+                return "Running benchmark"
             case .failed:
-                return "Recommendation unavailable"
+                return hasBenchmarkResults ? "Benchmark needs refresh" : "Benchmark unavailable"
             case .idle:
                 return "Import a Clash subscription"
             case .importing:
                 return "Importing Clash subscription"
             case .ready:
-                return "Ready to optimize"
+                return "Run your first benchmark"
             }
         }
     }
@@ -217,7 +234,7 @@ final class AutoModeViewModel: ObservableObject {
     var recommendationSummaryText: String {
         switch recommendationState {
         case .recommended(let summary):
-            return "Why this: \(summary.selectedCandidateID) scored highest with fresh, confident measurements."
+            return "Why this: \(resolvedCandidateLabel(for: summary.selectedCandidateID)) scored highest with fresh, confident measurements."
         case .holding(let hold):
             return holdMessage(for: hold)
         case .rejected(let rejection):
@@ -229,11 +246,13 @@ final class AutoModeViewModel: ObservableObject {
             case .importing:
                 return "Validating the Clash subscription and preparing it for use."
             case .ready:
-                return "Subscription ready. Optimize to start the tunnel and measure providers."
+                return "Subscription ready. Run Benchmark to measure providers and get a recommendation."
             case .startingTunnel:
-                return "Starting the current tunnel session."
+                return "Starting the tunnel and measuring the current candidates."
             case .running:
-                return "Tunnel is running. Optimize again any time to refresh the current recommendation."
+                return hasBenchmarkResults
+                    ? "Benchmark complete. Refresh Benchmark any time to update the recommendation."
+                    : "Tunnel is running. Run Benchmark to collect recommendation data."
             case .optimizing:
                 return "Testing providers and building the current recommendation."
             case .failed(let message):
@@ -291,16 +310,15 @@ final class AutoModeViewModel: ObservableObject {
         let payload = currentProofPayload
         guard !payload.deltas.isEmpty else {
             return [
-                ProofRow(title: "Reachability", value: "Pending"),
-                ProofRow(title: "Startup", value: "Pending"),
-                ProofRow(title: "Stability", value: "Pending")
+                ProofRow(title: "Latency", value: "Pending"),
+                ProofRow(title: "Jitter", value: "Pending"),
+                ProofRow(title: "Packet Loss", value: "Pending")
             ]
         }
 
-        let defaults = ["Reachability", "Startup", "Stability"]
-        return Array(payload.deltas.prefix(3).enumerated()).map { index, delta in
+        return Array(payload.deltas.prefix(3)).map { delta in
             ProofRow(
-                title: defaults[index],
+                title: delta.metricName,
                 value: formatted(delta: delta)
             )
         }
@@ -320,12 +338,63 @@ final class AutoModeViewModel: ObservableObject {
     private var emptyProofPayload: ProofPayload {
         ProofPayload(
             title: "Why this?",
-            subtitle: "Run optimize to generate measurable proof.",
+            subtitle: "Run Benchmark to generate measurable proof.",
             deltas: [],
             confidence: 0,
             freshness: 0,
             isPartial: false
         )
+    }
+
+    var benchmarkActionTitle: String {
+        hasBenchmarkResults ? "Refresh Benchmark" : "Run Benchmark"
+    }
+
+    var isBenchmarkInFlight: Bool {
+        switch status {
+        case .importing, .startingTunnel, .optimizing:
+            return true
+        case .idle, .ready, .running, .failed:
+            return false
+        }
+    }
+
+    var homeMetricSummaries: [HomeMetricSummary] {
+        HomeMetric.summaryList(for: activeCandidate)
+    }
+
+    var homeRecommendationSubtitle: String {
+        if !hasBenchmarkResults {
+            return "Run Benchmark to measure latency, jitter, packet loss, and throughput before RockeRoom recommends anything."
+        }
+
+        switch recommendationState {
+        case .recommended(let summary):
+            return "\(resolvedCandidateLabel(for: summary.selectedCandidateID)) leads with the strongest current benchmark."
+        case .holding(let hold):
+            return holdMessage(for: hold)
+        case .rejected(let rejection):
+            return rejection.message
+        case .idle, .evaluating:
+            return recommendationSummaryText
+        }
+    }
+
+    var homeRecommendationStatus: String {
+        if !hasBenchmarkResults {
+            return "No benchmark run yet"
+        }
+
+        switch recommendationState {
+        case .recommended:
+            return "Measured recommendation"
+        case .holding:
+            return "Measured hold"
+        case .rejected:
+            return "Recommendation unavailable"
+        case .idle, .evaluating:
+            return "Benchmark in progress"
+        }
     }
 
     private var activeCandidate: ProbeCandidateResult? {
@@ -400,7 +469,7 @@ final class AutoModeViewModel: ObservableObject {
     private func holdMessage(for hold: RecommendationHold) -> String {
         switch hold.reason {
         case .pinned:
-            return "Pinned provider active. Auto-switch is disabled."
+            return "Pinned provider active. Manual selection stays in effect until you unpin it in Expert Console."
         case .lowConfidence:
             return "Best current setup. Confidence is still building, so RockeRoom will not switch yet."
         case .insignificantDelta:
@@ -417,9 +486,9 @@ final class AutoModeViewModel: ObservableObject {
         case .unavailable:
             return nil
         case .explicitOnly:
-            return "Stale evidence. Optimize to refresh before RockeRoom changes anything."
+            return "Stale evidence. Run Benchmark to refresh before RockeRoom changes anything."
         case .recommended:
-            return "Refresh available. Optimize again to update stale evidence."
+            return "Refresh available. Run Benchmark again to update stale evidence."
         }
     }
 
@@ -456,6 +525,10 @@ final class AutoModeViewModel: ObservableObject {
             return "\(sign)\(Int(difference))\(delta.unit)"
         }
         return "\(sign)\(Int(difference.rounded()))\(delta.unit)"
+    }
+
+    private func resolvedCandidateLabel(for candidateID: String) -> String {
+        snapshot?.candidates.first(where: { $0.candidateID == candidateID })?.label ?? candidateID
     }
 
     private static func makeImporter() -> ClashSubscriptionImporter {
@@ -501,6 +574,49 @@ struct ProofRow: Equatable {
     let value: String
 }
 
+struct HomeMetricSummary: Equatable, Identifiable {
+    let id: String
+    let title: String
+    let value: String
+    let note: String?
+}
+
+private enum HomeMetric: String, CaseIterable {
+    case latency = "Latency"
+    case jitter = "Jitter"
+    case packetLoss = "Packet Loss"
+    case throughput = "Throughput"
+
+    static func summaryList(for candidate: ProbeCandidateResult?) -> [HomeMetricSummary] {
+        allCases.map { metric in
+            metric.summary(for: candidate)
+        }
+    }
+
+    private func summary(for candidate: ProbeCandidateResult?) -> HomeMetricSummary {
+        guard let metric = candidate?.metrics.first(where: { $0.name == rawValue }) else {
+            return HomeMetricSummary(
+                id: rawValue,
+                title: rawValue,
+                value: "Unavailable",
+                note: self == .throughput ? "Not measured in this benchmark." : nil
+            )
+        }
+
+        let rendered: String
+        switch metric.unit {
+        case "ms":
+            rendered = "\(Int(metric.value.rounded()))\(metric.unit)"
+        case "%":
+            rendered = String(format: "%.1f%@", metric.value, metric.unit)
+        default:
+            rendered = "\(Int(metric.value.rounded())) \(metric.unit)"
+        }
+
+        return HomeMetricSummary(id: rawValue, title: rawValue, value: rendered, note: nil)
+    }
+}
+
 private extension TunnelSession.RuntimeState {
     var asAdapterState: ClashAdapterStatus.State {
         switch self {
@@ -520,6 +636,10 @@ private struct LocalDevelopmentSubscriptionFetcher: SubscriptionContentFetching 
     func fetch(from url: URL) async throws -> Data {
         guard url.host?.contains("invalid") != true else {
             throw URLError(.badServerResponse)
+        }
+
+        if let payload = ProcessInfo.processInfo.environment["ROCKEROOM_DEMO_SUBSCRIPTION_PAYLOAD_B64"] {
+            return Data(payload.utf8)
         }
 
         let yaml = """
@@ -545,22 +665,35 @@ private struct DemoProbeExecutor: ProbeExecuting {
         let score: Double
         let confidence: Double
         let freshness: Double
+        let fingerprint = [candidate.name, candidate.server ?? ""].joined(separator: " ").lowercased()
 
-        switch candidate.name {
-        case let name where name.localizedCaseInsensitiveContains("fast"):
+        switch fingerprint {
+        case let value where value.localizedCaseInsensitiveContains("fast") || value.localizedCaseInsensitiveContains("hong kong") || value.localizedCaseInsensitiveContains("hk-"):
             metrics = [
-                ProbeMetric(name: "reachability", value: 97, unit: "%", betterIsHigher: true),
-                ProbeMetric(name: "startup", value: 180, unit: "ms", betterIsHigher: false),
-                ProbeMetric(name: "stability", value: 92, unit: "pts", betterIsHigher: true)
+                ProbeMetric(name: "Latency", value: 38, unit: "ms", betterIsHigher: false),
+                ProbeMetric(name: "Jitter", value: 4, unit: "ms", betterIsHigher: false),
+                ProbeMetric(name: "Packet Loss", value: 0.2, unit: "%", betterIsHigher: false),
+                ProbeMetric(name: "Throughput", value: 182, unit: "Mbps", betterIsHigher: true)
             ]
             score = 0.91
             confidence = 0.88
             freshness = 0.96
+        case let value where value.localizedCaseInsensitiveContains("japan") || value.localizedCaseInsensitiveContains("jp-"):
+            metrics = [
+                ProbeMetric(name: "Latency", value: 54, unit: "ms", betterIsHigher: false),
+                ProbeMetric(name: "Jitter", value: 7, unit: "ms", betterIsHigher: false),
+                ProbeMetric(name: "Packet Loss", value: 0.5, unit: "%", betterIsHigher: false),
+                ProbeMetric(name: "Throughput", value: 148, unit: "Mbps", betterIsHigher: true)
+            ]
+            score = 0.82
+            confidence = 0.85
+            freshness = 0.95
         default:
             metrics = [
-                ProbeMetric(name: "reachability", value: 92, unit: "%", betterIsHigher: true),
-                ProbeMetric(name: "startup", value: 240, unit: "ms", betterIsHigher: false),
-                ProbeMetric(name: "stability", value: 95, unit: "pts", betterIsHigher: true)
+                ProbeMetric(name: "Latency", value: 71, unit: "ms", betterIsHigher: false),
+                ProbeMetric(name: "Jitter", value: 9, unit: "ms", betterIsHigher: false),
+                ProbeMetric(name: "Packet Loss", value: 0.8, unit: "%", betterIsHigher: false),
+                ProbeMetric(name: "Throughput", value: 124, unit: "Mbps", betterIsHigher: true)
             ]
             score = 0.74
             confidence = 0.84

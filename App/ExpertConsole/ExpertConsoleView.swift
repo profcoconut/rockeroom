@@ -19,7 +19,7 @@ struct ExpertConsoleView: View {
 
             Section("Ranked candidates") {
                 if viewModel.rankedCandidates.isEmpty {
-                    Text("No recent test data")
+                    Text("Run Benchmark from Home to populate ranked candidates.")
                         .foregroundStyle(.secondary)
                 } else {
                     VStack(spacing: 0) {
@@ -33,7 +33,7 @@ struct ExpertConsoleView: View {
 
             Section("Evidence") {
                 if viewModel.evidenceRows.isEmpty {
-                    Text("No recent test data")
+                    Text("No benchmark evidence yet")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(viewModel.evidenceRows, id: \.0) { row in

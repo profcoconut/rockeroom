@@ -41,7 +41,7 @@ public struct EvidenceProjection: Equatable, Sendable {
                 stateBadges: [],
                 cards: [],
                 featuredProof: nil,
-                emptyMessage: "Run Optimize to collect marketplace evidence."
+                emptyMessage: "Run Benchmark to collect marketplace evidence."
             )
         }
 

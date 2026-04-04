@@ -67,6 +67,30 @@ final class ClashSubscriptionImporterTests: XCTestCase {
             XCTFail("Expected rejection")
         case .rejected(let failure):
             XCTAssertEqual(failure.reason, SubscriptionImportFailureReason.malformedContent)
+            XCTAssertEqual(
+                failure.message,
+                "The subscription response is not valid Clash YAML or a supported share-link feed."
+            )
+        }
+    }
+
+    func testImportSubscriptionRejectsUnsupportedShareLinkFeed() async {
+        let unsupportedFeed = """
+        hysteria2://token@example.com:443?alpn=h3#Unsupported Hysteria
+        """
+        let importer = ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data(unsupportedFeed.utf8)))
+
+        let result = await importer.importSubscription(from: "https://example.com/subscription")
+
+        switch result {
+        case .accepted:
+            XCTFail("Expected rejection")
+        case .rejected(let failure):
+            XCTAssertEqual(failure.reason, SubscriptionImportFailureReason.unsupportedContent)
+            XCTAssertEqual(
+                failure.message,
+                "RockeRoom fetched the subscription, but this format is not supported yet."
+            )
         }
     }
 

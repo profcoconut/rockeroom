@@ -1,90 +1,63 @@
 import SwiftUI
-import SharedKit
 
 struct AppRootView: View {
-    @State private var showingImportSheet = false
-    @State private var navigationPath = NavigationPath()
+    @State private var selectedTab: MainTab = .home
     @ObservedObject var autoModeViewModel: AutoModeViewModel
     @ObservedObject var expertConsoleViewModel: ExpertConsoleViewModel
+    let liveE2ERunner: LiveE2ERunner?
 
     var body: some View {
-        NavigationStack(path: $navigationPath) {
-            AutoModeView(
-                viewModel: autoModeViewModel,
-                onImportClashSubscription: {
-                    showingImportSheet = true
-                },
-                onOpenWhyThis: {
-                    navigationPath.append(AppDestination.whyThis)
-                },
-                onOpenExpertConsole: {
-                    expertConsoleViewModel.refresh(
-                        snapshot: autoModeViewModel.snapshot,
-                        recommendationState: autoModeViewModel.recommendationState,
-                        pinState: autoModeViewModel.pinState
-                    )
-                    navigationPath.append(AppDestination.expertConsole)
-                },
-                onOpenMarketplace: {
-                    navigationPath.append(AppDestination.marketplace)
-                },
-                marketplaceProjection: marketplaceProjection
-            )
-            .navigationTitle("RockeRoom")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .navigationDestination(for: AppDestination.self) { destination in
-                switch destination {
-                case .expertConsole:
-                    ExpertConsoleView(
-                        viewModel: expertConsoleViewModel,
-                        onPinCandidate: { candidateID in
-                            Task {
-                                await autoModeViewModel.pin(candidateID: candidateID)
-                                syncExpertConsole()
-                            }
-                        },
-                        onUnpinCandidate: {
-                            Task {
-                                await autoModeViewModel.unpinCurrentProvider()
-                                syncExpertConsole()
-                            }
-                        }
-                    )
-                case .whyThis:
-                    WhyThisView(
-                        proofPayload: autoModeViewModel.currentProofPayload,
-                        recommendationSummary: autoModeViewModel.recommendationSummaryText
-                    )
-                case .marketplace:
-                    MarketplaceView(projection: marketplaceProjection)
-                }
-            }
-            .sheet(isPresented: $showingImportSheet) {
-                SubscriptionImportView(
+        Group {
+            if autoModeViewModel.hasImportedSubscription {
+                MainTabView(
+                    selectedTab: $selectedTab,
+                    autoModeViewModel: autoModeViewModel,
+                    expertConsoleViewModel: expertConsoleViewModel
+                )
+            } else {
+                SetupHomeView(
                     placeholderLink: autoModeViewModel.subscriptionLink,
+                    importErrorMessage: autoModeViewModel.importErrorMessage,
+                    isImporting: autoModeViewModel.status == .importing,
                     onImport: { link in
                         autoModeViewModel.importSubscriptionLink(link)
-                        showingImportSheet = false
-                    },
-                    onCancel: {
-                        showingImportSheet = false
                     }
                 )
             }
-            .onAppear {
-                syncExpertConsole()
+        }
+        .onAppear {
+            syncExpertConsole()
+            advanceLiveE2E()
+        }
+        .onChange(of: autoModeViewModel.snapshot) { _, _ in
+            syncExpertConsole()
+            advanceLiveE2E()
+        }
+        .onChange(of: autoModeViewModel.recommendationState) { _, _ in
+            syncExpertConsole()
+            advanceLiveE2E()
+        }
+        .onChange(of: autoModeViewModel.pinState) { _, _ in
+            syncExpertConsole()
+            advanceLiveE2E()
+        }
+        .onChange(of: autoModeViewModel.status) { _, _ in
+            advanceLiveE2E()
+        }
+        .onChange(of: autoModeViewModel.hasImportedSubscription) { _, hasImportedSubscription in
+            if hasImportedSubscription {
+                selectedTab = .home
             }
-            .onChange(of: autoModeViewModel.snapshot) { _, _ in
-                syncExpertConsole()
-            }
-            .onChange(of: autoModeViewModel.recommendationState) { _, _ in
-                syncExpertConsole()
-            }
-            .onChange(of: autoModeViewModel.pinState) { _, _ in
-                syncExpertConsole()
-            }
+            advanceLiveE2E()
+        }
+        .onChange(of: selectedTab) { _, _ in
+            advanceLiveE2E()
+        }
+        .onChange(of: expertConsoleViewModel.rankedCandidates) { _, _ in
+            advanceLiveE2E()
+        }
+        .onChange(of: autoModeViewModel.refreshHintText) { _, _ in
+            advanceLiveE2E()
         }
     }
 
@@ -96,17 +69,48 @@ struct AppRootView: View {
         )
     }
 
-    private var marketplaceProjection: EvidenceProjection {
-        EvidenceProjection.project(
-            snapshot: autoModeViewModel.snapshot,
-            recommendationState: autoModeViewModel.recommendationState,
-            pinState: autoModeViewModel.pinState
+    private func advanceLiveE2E() {
+        liveE2ERunner?.advance(
+            state: LiveE2ERunner.State(
+                hasImportedSubscription: autoModeViewModel.hasImportedSubscription,
+                importErrorMessage: autoModeViewModel.importErrorMessage,
+                isImporting: autoModeViewModel.status == .importing,
+                hasBenchmarkResults: autoModeViewModel.hasBenchmarkResults,
+                isBenchmarkInFlight: autoModeViewModel.isBenchmarkInFlight,
+                selectedTab: selectedTab,
+                refreshHintText: autoModeViewModel.refreshHintText,
+                pinnedCandidateID: autoModeViewModel.pinState.candidateID,
+                rankedCandidates: expertConsoleViewModel.rankedCandidates.map {
+                    .init(candidateID: $0.candidateID, title: $0.title)
+                }
+            ),
+            actions: LiveE2ERunner.Actions(
+                importSubscription: { link in
+                    autoModeViewModel.importSubscriptionLink(link)
+                },
+                runBenchmark: {
+                    autoModeViewModel.optimize()
+                },
+                selectTab: { tab in
+                    selectedTab = tab
+                },
+                pinCandidate: { candidateID in
+                    Task {
+                        await autoModeViewModel.pin(candidateID: candidateID)
+                    }
+                },
+                unpinCandidate: {
+                    Task {
+                        await autoModeViewModel.unpinCurrentProvider()
+                    }
+                }
+            )
         )
     }
 }
 
-enum AppDestination: Hashable {
+enum MainTab: Hashable {
+    case home
     case expertConsole
-    case whyThis
     case marketplace
 }

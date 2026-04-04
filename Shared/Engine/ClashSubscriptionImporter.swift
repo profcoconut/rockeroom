@@ -54,31 +54,39 @@ public final class ClashSubscriptionImporter: Sendable {
         let decodedText = Self.decodeBase64IfNeeded(from: rawText)
         let subscriptionText = Self.chooseBestText(rawText: rawText, decodedText: decodedText)
 
-        guard let parsed = SubscriptionTextParser.parse(subscriptionText) else {
-            return .rejected(
-                SubscriptionImportFailure(
-                    reason: .malformedContent,
-                    message: "The subscription content could not be parsed."
+        switch SubscriptionTextParser.parse(subscriptionText) {
+        case .parsed(let parsed):
+            guard !parsed.proxies.isEmpty else {
+                return .rejected(
+                    SubscriptionImportFailure(
+                        reason: .unsupportedContent,
+                        message: "The subscription does not contain any usable proxies."
+                    )
                 )
-            )
-        }
+            }
 
-        guard !parsed.proxies.isEmpty else {
+            let config = SubscriptionConfig(
+                sourceURL: sourceURL,
+                fetchedAt: clock(),
+                subscriptionName: parsed.subscriptionName,
+                proxies: parsed.proxies
+            )
+            return .accepted(config)
+        case .unsupported:
             return .rejected(
                 SubscriptionImportFailure(
                     reason: .unsupportedContent,
-                    message: "The subscription does not contain any usable proxies."
+                    message: "RockeRoom fetched the subscription, but this format is not supported yet."
+                )
+            )
+        case .malformed:
+            return .rejected(
+                SubscriptionImportFailure(
+                    reason: .malformedContent,
+                    message: "The subscription response is not valid Clash YAML or a supported share-link feed."
                 )
             )
         }
-
-        let config = SubscriptionConfig(
-            sourceURL: sourceURL,
-            fetchedAt: clock(),
-            subscriptionName: parsed.subscriptionName,
-            proxies: parsed.proxies
-        )
-        return .accepted(config)
     }
 
     private static func decodeBase64IfNeeded(from text: String) -> String? {
@@ -89,13 +97,22 @@ public final class ClashSubscriptionImporter: Sendable {
     }
 
     private static func chooseBestText(rawText: String, decodedText: String?) -> String {
-        if let decodedText, decodedText.contains("proxies:") || decodedText.contains("proxy-providers:") {
+        if let decodedText, looksLikeStructuredSubscription(decodedText) {
             return decodedText
         }
-        if rawText.contains("proxies:") || rawText.contains("proxy-providers:") {
+        if looksLikeStructuredSubscription(rawText) {
             return rawText
         }
         return decodedText ?? rawText
+    }
+
+    private static func looksLikeStructuredSubscription(_ text: String) -> Bool {
+        text.contains("proxies:") ||
+        text.contains("proxy-providers:") ||
+        text.localizedCaseInsensitiveContains("vless://") ||
+        text.localizedCaseInsensitiveContains("vmess://") ||
+        text.localizedCaseInsensitiveContains("trojan://") ||
+        text.localizedCaseInsensitiveContains("ss://")
     }
 }
 
@@ -113,10 +130,26 @@ private struct ParsedSubscriptionText {
     var proxies: [ClashProxy]
 }
 
+private enum SubscriptionTextParseResult {
+    case parsed(ParsedSubscriptionText)
+    case unsupported
+    case malformed
+}
+
 private enum SubscriptionTextParser {
-    static func parse(_ text: String) -> ParsedSubscriptionText? {
+    static func parse(_ text: String) -> SubscriptionTextParseResult {
+        if looksLikeClashYAML(text) {
+            return parseClashYAML(text)
+        }
+        if looksLikeURIFeed(text) {
+            return parseURIFeed(text)
+        }
+        return .malformed
+    }
+
+    private static func parseClashYAML(_ text: String) -> SubscriptionTextParseResult {
         let lines = text.split(whereSeparator: \.isNewline).map(String.init)
-        guard !lines.isEmpty else { return nil }
+        guard !lines.isEmpty else { return .malformed }
 
         var subscriptionName: String?
         var proxies: [ClashProxy] = []
@@ -223,8 +256,8 @@ private enum SubscriptionTextParser {
         }
 
         flushCurrentProxy()
-        guard !proxies.isEmpty else { return nil }
-        return ParsedSubscriptionText(subscriptionName: subscriptionName, proxies: proxies)
+        guard !proxies.isEmpty else { return .unsupported }
+        return .parsed(ParsedSubscriptionText(subscriptionName: subscriptionName, proxies: proxies))
     }
 
     private static func value(after prefix: String, in line: String) -> String? {
@@ -265,4 +298,134 @@ private enum SubscriptionTextParser {
             return nil
         }
     }
+
+    private static func parseURIFeed(_ text: String) -> SubscriptionTextParseResult {
+        let lines = text
+            .split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        guard !lines.isEmpty else { return .malformed }
+
+        var proxies: [ClashProxy] = []
+        var sawShareLink = false
+        var sawSupportedShareLink = false
+
+        for line in lines {
+            guard let scheme = uriScheme(in: line) else { continue }
+            sawShareLink = true
+
+            guard supportedURISchemes.contains(scheme) else { continue }
+            sawSupportedShareLink = true
+
+            switch parseURIProxy(line, scheme: scheme) {
+            case .accepted(let proxy):
+                proxies.append(proxy)
+            case .ignoredMetadata:
+                continue
+            case .malformed:
+                return .malformed
+            }
+        }
+
+        if !proxies.isEmpty {
+            return .parsed(ParsedSubscriptionText(subscriptionName: nil, proxies: proxies))
+        }
+        if sawSupportedShareLink || sawShareLink {
+            return .unsupported
+        }
+        return .malformed
+    }
+
+    private static func parseURIProxy(_ line: String, scheme: String) -> URIProxyParseResult {
+        guard let components = URLComponents(string: line),
+              let host = components.host,
+              let port = components.port
+        else {
+            return .malformed
+        }
+
+        let decodedName = decodedFragment(from: components) ?? "\(scheme.uppercased()) \(host)"
+        if isMetadataOnlyProxyName(decodedName) {
+            return .ignoredMetadata
+        }
+
+        var metadata: [String: String] = [
+            "rawURI": line,
+            "scheme": scheme
+        ]
+
+        if let user = components.user, !user.isEmpty {
+            metadata["credential"] = user
+        }
+
+        if let password = components.password, !password.isEmpty {
+            metadata["password"] = password
+        }
+
+        for item in components.queryItems ?? [] {
+            guard let value = item.value, !value.isEmpty else { continue }
+            metadata[item.name] = value
+        }
+
+        return .accepted(
+            ClashProxy(
+                name: decodedName,
+                type: scheme,
+                server: host,
+                port: port,
+                udp: metadata["udp"].flatMap(parseBool),
+                metadata: metadata
+            )
+        )
+    }
+
+    private static func decodedFragment(from components: URLComponents) -> String? {
+        let rawFragment = components.percentEncodedFragment ?? components.fragment
+        let decoded = rawFragment?.removingPercentEncoding ?? rawFragment
+        let trimmed = decoded?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed?.isEmpty == false ? trimmed : nil
+    }
+
+    private static func uriScheme(in line: String) -> String? {
+        guard let separator = line.range(of: "://") else { return nil }
+        let scheme = line[..<separator.lowerBound].lowercased()
+        return scheme.isEmpty ? nil : scheme
+    }
+
+    private static func looksLikeClashYAML(_ text: String) -> Bool {
+        text.contains("proxies:") || text.contains("proxy-providers:")
+    }
+
+    private static func looksLikeURIFeed(_ text: String) -> Bool {
+        text.split(whereSeparator: \.isNewline).contains { line in
+            uriScheme(in: String(line)) != nil
+        }
+    }
+
+    private static func isMetadataOnlyProxyName(_ name: String) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return true }
+
+        let metadataMarkers = [
+            "剩余流量",
+            "流量",
+            "到期",
+            "套餐",
+            "订阅",
+            "官网",
+            "客服",
+            "群"
+        ]
+
+        return metadataMarkers.contains { trimmed.localizedCaseInsensitiveContains($0) }
+    }
+
+    private static let supportedURISchemes: Set<String> = ["vless", "vmess", "trojan", "ss"]
+}
+
+private enum URIProxyParseResult {
+    case accepted(ClashProxy)
+    case ignoredMetadata
+    case malformed
 }

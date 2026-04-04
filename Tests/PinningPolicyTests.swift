@@ -11,7 +11,7 @@ final class PinningPolicyTests: XCTestCase {
                 ProbeCandidateResult(
                     candidateID: "best",
                     label: "Best",
-                    metrics: [ProbeMetric(name: "latency", value: 20, unit: "ms", betterIsHigher: false)],
+                    metrics: [ProbeMetric(name: "Latency", value: 20, unit: "ms", betterIsHigher: false)],
                     score: 0.99,
                     confidence: 0.99,
                     freshness: 1.0
@@ -19,7 +19,7 @@ final class PinningPolicyTests: XCTestCase {
                 ProbeCandidateResult(
                     candidateID: "pinned",
                     label: "Pinned",
-                    metrics: [ProbeMetric(name: "latency", value: 120, unit: "ms", betterIsHigher: false)],
+                    metrics: [ProbeMetric(name: "Latency", value: 120, unit: "ms", betterIsHigher: false)],
                     score: 0.25,
                     confidence: 0.70,
                     freshness: 1.0
