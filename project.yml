@@ -63,6 +63,8 @@ targets:
           - AutoModeViewModelTests.swift
           - HomeSummaryMetricTests.swift
           - LiveE2EScenarioTests.swift
+    resources:
+      - path: Tests/Fixtures/routing-destinations
     dependencies:
       - target: SharedKit
     settings:

@@ -3,6 +3,23 @@ import XCTest
 @testable import RockeRoom
 @testable import SharedKit
 
+/// Tests for Home surface metric summaries.
+///
+/// ## Routing Integration Note
+///
+/// The current tests exercise proxy/node-level metrics (Latency, Jitter, Packet Loss,
+/// Throughput) against the current provider. When destination routing is implemented,
+/// these metrics will become destination-specific — e.g., "Latency to Netflix" vs
+/// "Latency to ChatGPT" — and `homeMetricSummaries` will need to reflect the
+/// active destination's measured performance.
+///
+/// The `homeRecommendationStatus` values ("Measured recommendation", "Measured hold")
+/// are also destination-aware in later sprints: the status reflects the quality of the
+/// current provider for the active destination, not just the provider in isolation.
+///
+/// This test class serves as the contract anchor for the routing-to-summary integration
+/// point. When destination routing lands, these tests verify the metrics remain correct
+/// while adding destination-context assertions.
 @MainActor
 final class HomeSummaryMetricTests: XCTestCase {
     func testHomeSummaryExposesFourMetricsForActiveCandidate() async throws {

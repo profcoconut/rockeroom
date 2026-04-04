@@ -4,6 +4,30 @@ import Foundation
 @testable import RockeRoom
 @testable import SharedKit
 
+/// Tests for AutoModeViewModel routing state and recommendation behavior.
+///
+/// ## Routing Integration Note
+///
+/// The current tests exercise provider-level routing state — which proxy is active,
+/// whether it is pinned, and whether evidence is fresh enough to act on.
+///
+/// When destination routing is implemented, the ViewModel will add a `selectedDestination`
+/// dimension. The `recommendationState`, `currentSetupText`, `homeMetricSummaries`,
+/// and `homeRecommendationStatus` will all become destination-specific. For example:
+/// - `currentSetupText` will reflect the active destination's measured provider, not just
+///   the globally "current" provider
+/// - `recommendationState` will indicate whether a better route exists *for that destination*
+/// - The existing "pinned" hold reason will be destination-scoped: a pin on "Netflix" does not
+///   affect routing decisions for "OpenAI"
+///
+/// The `recommendationState` enum cases (`.applying`, `.holding`, `.advisory`, `.idle`)
+/// will remain structurally similar but their associated data will carry destination context.
+/// Tests that today assert on `hold.reason == .pinned` will need to assert on
+/// `destinationID == selectedDestination && hold.reason == .pinned` in later sprints.
+///
+/// This test class serves as the contract anchor for the routing-to-viewmodel integration
+/// point. When destination routing lands, these tests verify the ViewModel's existing
+/// behavior remains correct while adding destination-context assertions.
 @MainActor
 final class AutoModeViewModelTests: XCTestCase {
     func testRestoreStateLoadsStoredSubscriptionAndRunningTunnelStatus() async throws {

@@ -1,0 +1,4 @@
+id: netflix
+label: Netflix
+rule_family: ios_rule_script/streaming
+fallback: false

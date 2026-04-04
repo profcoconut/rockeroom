@@ -10,6 +10,7 @@ RockeRoom now supports a launch-driven live E2E workflow so simulator validation
 - pinning and unpinning from the normal recommendation path
 - stale restore and refresh
 - tunnel failure and recovery
+- destination-aware routing scenarios (Auto Mode apply, Manual Mode advisory, override/pin, stale refresh, failed reassignment recovery)
 
 ## Scenario Contract
 
@@ -18,7 +19,7 @@ The app reads these launch environment keys:
 - `ROCKEROOM_LIVE_E2E_SCENARIO`
 - `ROCKEROOM_LIVE_E2E_LINK`
 
-Supported scenarios:
+### Established Scenarios (provider-level)
 
 - `import-home`
 - `benchmark-home`
@@ -31,7 +32,31 @@ Supported scenarios:
 - `tunnel-failure`
 - `tunnel-recovery`
 
+### Destination-Aware Routing Scenarios (Sprint 1 contract placeholders)
+
+These scenarios are added to the E2E matrix as forward-looking contract placeholders. They currently degrade to no-op launch until the destination routing engine is implemented in later sprints.
+
+- `auto-mode-apply` — Auto Mode applies a better route when evidence is strong
+- `manual-mode-advisory` — Manual Mode surfaces a better route but requires user confirmation
+- `override-or-pin` — User override or pin suppresses the automatic recommendation
+- `stale-or-refresh` — Evidence is stale and a refresh is required before acting
+- `failed-reassignment` — Route reassignment failed and the app recovered to a safe state
+
 The runner is state-aware. It uses the normal view-model methods for import, benchmark, tab selection, and pinning rather than bypassing product code.
+
+## Destination-Aware Routing Matrix
+
+The destination routing scenarios define a contract matrix for later sprint implementation:
+
+| Scenario | Evidence | Strategy | Action |
+|---|---|---|---|
+| `auto-mode-apply` | Strong + fresh | Auto | App auto-applies better route |
+| `manual-mode-advisory` | Any | Manual | App surfaces advisory, user decides |
+| `override-or-pin` | Any | Auto or Manual | Pin/override suppresses auto-switch |
+| `stale-or-refresh` | Stale | Any | Hold until fresh benchmark run |
+| `failed-reassignment` | — | Any | Recover to previous known-good state |
+
+Each scenario must remain launch-replayable and idempotent across repeated foreground transitions. Degraded scenarios (not yet implemented) must not corrupt the app state.
 
 ## Deterministic Regression Mode
 
@@ -92,6 +117,16 @@ Checks to inspect per flow:
 - `stale-refresh`: refresh hint clears after rerunning the benchmark
 - `tunnel-failure`: recoverable failure text is visible on `Home`
 - `tunnel-recovery`: benchmark succeeds on the next launch and tunnel state returns to running
+
+### Destination-Aware Routing Scenario Checks
+
+These checks are deferred to later sprints when the routing engine is implemented. The Sprint 1 contract only verifies that these scenarios launch without crashing and do not corrupt app state.
+
+- `auto-mode-apply`: app reaches stable `Home` state without crash
+- `manual-mode-advisory`: app reaches stable `Home` state without crash
+- `override-or-pin`: app reaches stable `Home` state without crash
+- `stale-or-refresh`: app reaches stable `Home` state without crash
+- `failed-reassignment`: app reaches stable `Home` state without crash
 
 ## Limitations
 

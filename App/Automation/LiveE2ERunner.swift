@@ -84,6 +84,12 @@ final class LiveE2ERunner: ObservableObject {
             return nextTunnelFailureAction(for: state)
         case .tunnelRecovery:
             return nextTunnelRecoveryAction(for: state)
+
+        // MARK: - Destination-Aware Routing (Sprint 1 contract placeholders)
+        // These cases are added to the contract matrix but degrade to no-op
+        // until the runtime routing engine is implemented in later sprints.
+        case .autoModeApply, .manualModeAdvisory, .overrideOrPin, .staleOrRefresh, .failedReassignment:
+            return nil
         }
     }
 

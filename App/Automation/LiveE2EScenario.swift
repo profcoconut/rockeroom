@@ -12,6 +12,19 @@ struct LiveE2EScenario: Equatable {
         case staleRefresh = "stale-refresh"
         case tunnelFailure = "tunnel-failure"
         case tunnelRecovery = "tunnel-recovery"
+
+        // MARK: - Destination-Aware Routing Scenarios (Sprint 1 contract placeholders)
+
+        /// Auto Mode: a better route is available and evidence is strong enough to apply automatically.
+        case autoModeApply = "auto-mode-apply"
+        /// Manual Mode: a better route is available but only advisory — user must confirm.
+        case manualModeAdvisory = "manual-mode-advisory"
+        /// Override or pin path: user has overridden the automatic recommendation.
+        case overrideOrPin = "override-or-pin"
+        /// Stale evidence path: the current route evidence is stale and a refresh is needed.
+        case staleOrRefresh = "stale-or-refresh"
+        /// Recovery path: a route reassignment failed and the app recovered to a safe state.
+        case failedReassignment = "failed-reassignment"
     }
 
     let kind: Kind
