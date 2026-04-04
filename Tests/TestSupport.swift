@@ -2,6 +2,66 @@ import Foundation
 
 @testable import SharedKit
 
+struct DestinationCatalogFixtureLoader {
+    func loadAll() throws -> [RoutingDestination] {
+        let contents = try FileManager.default.contentsOfDirectory(
+            at: fixtureDirectoryURL,
+            includingPropertiesForKeys: nil,
+            options: .skipsHiddenFiles
+        )
+
+        return contents
+            .filter { ["yaml", "yml"].contains($0.pathExtension) }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            .compactMap(parseFixture)
+    }
+
+    private var fixtureDirectoryURL: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Fixtures")
+            .appendingPathComponent("routing-destinations")
+    }
+
+    private func parseFixture(at url: URL) -> RoutingDestination? {
+        guard let data = try? Data(contentsOf: url),
+              let content = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+
+        var slug: String?
+        var label: String?
+        var ruleFamily: String?
+        var fallback = false
+
+        for line in content.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard let colon = trimmed.range(of: ":") else { continue }
+            let key = String(trimmed[..<colon.lowerBound])
+            let value = String(trimmed[colon.upperBound...]).trimmingCharacters(in: .whitespaces)
+
+            switch key {
+            case "id":
+                if !value.isEmpty { slug = value }
+            case "label":
+                if !value.isEmpty { label = value }
+            case "rule_family":
+                if !value.isEmpty { ruleFamily = value }
+            case "fallback":
+                fallback = value == "true"
+            default:
+                break
+            }
+        }
+
+        guard let slug, let label, let ruleFamily else {
+            return nil
+        }
+
+        return RoutingDestination(slug: slug, label: label, ruleFamily: ruleFamily, isFallback: fallback)
+    }
+}
+
 struct TestStubFetcher: SubscriptionContentFetching {
     let data: Data
 

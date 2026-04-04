@@ -10,13 +10,11 @@ import XCTest
 /// The v1 destinations are locked here so later routing-engine work cannot silently
 /// widen scope without breaking these tests.
 final class DestinationCatalogTests: XCTestCase {
-    private var catalogLoader: DestinationCatalogLoader!
+    private var catalogLoader: DestinationCatalogFixtureLoader!
 
     override func setUp() {
         super.setUp()
-        // Use no-arg initializer: bundle lookup falls back to #filePath-derived path
-        // which is stable regardless of which bundle Bundle.main resolves to at runtime.
-        catalogLoader = DestinationCatalogLoader()
+        catalogLoader = DestinationCatalogFixtureLoader()
     }
 
     override func tearDown() {
@@ -26,13 +24,13 @@ final class DestinationCatalogTests: XCTestCase {
 
     // MARK: - Happy Path
 
-    func testCatalogResolvesExactlyTenDestinations() {
-        let destinations = catalogLoader.loadAll()
+    func testCatalogResolvesExactlyTenDestinations() throws {
+        let destinations = try catalogLoader.loadAll()
         XCTAssertEqual(destinations.count, 10, "Catalog must contain exactly 10 destinations")
     }
 
-    func testCatalogContainsExpectedTop10Labels() {
-        let destinations = catalogLoader.loadAll()
+    func testCatalogContainsExpectedTop10Labels() throws {
+        let destinations = try catalogLoader.loadAll()
         let labels = Set(destinations.map(\.label))
         let expected = Set([
             "OpenAI",
@@ -49,8 +47,8 @@ final class DestinationCatalogTests: XCTestCase {
         XCTAssertEqual(labels, expected, "Catalog must contain the expected top-10 labels")
     }
 
-    func testCatalogContainsExpectedTop10IDs() {
-        let destinations = catalogLoader.loadAll()
+    func testCatalogContainsExpectedTop10IDs() throws {
+        let destinations = try catalogLoader.loadAll()
         let ids = Set(destinations.map(\.id))
         let expected = Set([
             "openai",
@@ -67,8 +65,8 @@ final class DestinationCatalogTests: XCTestCase {
         XCTAssertEqual(ids, expected, "Catalog must contain the expected top-10 IDs")
     }
 
-    func testEachDestinationHasStableInternalIdentity() {
-        let destinations = catalogLoader.loadAll()
+    func testEachDestinationHasStableInternalIdentity() throws {
+        let destinations = try catalogLoader.loadAll()
         for destination in destinations {
             XCTAssertFalse(destination.id.isEmpty, "Destination id must not be empty")
             XCTAssertFalse(
@@ -83,8 +81,8 @@ final class DestinationCatalogTests: XCTestCase {
         }
     }
 
-    func testFinalDestinationMarkedAsFallback() {
-        let destinations = catalogLoader.loadAll()
+    func testFinalDestinationMarkedAsFallback() throws {
+        let destinations = try catalogLoader.loadAll()
         guard let final = destinations.first(where: { $0.id == "final" }) else {
             XCTFail("'final' destination must exist in catalog")
             return
@@ -92,17 +90,17 @@ final class DestinationCatalogTests: XCTestCase {
         XCTAssertTrue(final.isFallback, "'final' destination must be marked as fallback")
     }
 
-    func testNonFallbackDestinationsAreNotMarkedAsFallback() {
-        let destinations = catalogLoader.loadAll().filter { !$0.isFallback }
+    func testNonFallbackDestinationsAreNotMarkedAsFallback() throws {
+        let destinations = try catalogLoader.loadAll().filter { !$0.isFallback }
         let fallbackIDs = Set(destinations.filter { $0.isFallback }.map { $0.id })
         XCTAssertTrue(fallbackIDs.isEmpty, "Only 'final' should be marked as fallback, found: \(fallbackIDs)")
     }
 
     // MARK: - Edge Cases
 
-    func testDestinationOrderChangesDoNotAffectIdentityValues() {
-        let firstLoad = catalogLoader.loadAll()
-        let secondLoad = catalogLoader.loadAll()
+    func testDestinationOrderChangesDoNotAffectIdentityValues() throws {
+        let firstLoad = try catalogLoader.loadAll()
+        let secondLoad = try catalogLoader.loadAll()
 
         let firstIDs = firstLoad.map(\.id)
         let secondIDs = secondLoad.map(\.id)
@@ -114,8 +112,8 @@ final class DestinationCatalogTests: XCTestCase {
         )
     }
 
-    func testAllDestinationsHaveRuleFamilyProvenance() {
-        let destinations = catalogLoader.loadAll()
+    func testAllDestinationsHaveRuleFamilyProvenance() throws {
+        let destinations = try catalogLoader.loadAll()
         for destination in destinations {
             XCTAssertFalse(
                 destination.ruleFamily.isEmpty,
@@ -126,8 +124,8 @@ final class DestinationCatalogTests: XCTestCase {
 
     // MARK: - Error Paths
 
-    func testNoDuplicateDestinationIDs() {
-        let destinations = catalogLoader.loadAll()
+    func testNoDuplicateDestinationIDs() throws {
+        let destinations = try catalogLoader.loadAll()
         let ids = destinations.map(\.id)
         let uniqueIDs = Set(ids)
         XCTAssertEqual(
@@ -137,8 +135,8 @@ final class DestinationCatalogTests: XCTestCase {
         )
     }
 
-    func testNoDuplicateDisplayLabels() {
-        let destinations = catalogLoader.loadAll()
+    func testNoDuplicateDisplayLabels() throws {
+        let destinations = try catalogLoader.loadAll()
         let labels = destinations.map(\.label)
         let uniqueLabels = Set(labels)
         XCTAssertEqual(
@@ -148,8 +146,8 @@ final class DestinationCatalogTests: XCTestCase {
         )
     }
 
-    func testFinalIsTheOnlyDestinationWithoutExplicitRuleFamily() {
-        let destinations = catalogLoader.loadAll()
+    func testFinalIsTheOnlyDestinationWithoutExplicitRuleFamily() throws {
+        let destinations = try catalogLoader.loadAll()
         let nonFinalWithoutRuleFamily = destinations.filter {
             $0.id != "final" && $0.ruleFamily == "direct"
         }
@@ -161,10 +159,10 @@ final class DestinationCatalogTests: XCTestCase {
 
     // MARK: - Integration
 
-    func testCatalogLoaderIsReusableAcrossMultipleLoads() {
-        let first = catalogLoader.loadAll()
-        let second = catalogLoader.loadAll()
-        let third = catalogLoader.loadAll()
+    func testCatalogLoaderIsReusableAcrossMultipleLoads() throws {
+        let first = try catalogLoader.loadAll()
+        let second = try catalogLoader.loadAll()
+        let third = try catalogLoader.loadAll()
 
         XCTAssertEqual(first.map(\.id).sorted(), second.map(\.id).sorted())
         XCTAssertEqual(second.map(\.id).sorted(), third.map(\.id).sorted())
