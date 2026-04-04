@@ -72,6 +72,33 @@ final class ClashAdapterTests: XCTestCase {
         XCTAssertEqual(session?.configurationID, config.configurationID)
         XCTAssertEqual(session?.runtimeState, .failed(message: "Could not start the RockeRoom tunnel."))
     }
+
+    func testRepeatedStartFailureDoesNotCorruptPersistedConfigurationIdentity() async {
+        let sessionStore = TunnelSessionStore(store: InMemoryDataStore(), key: "rockeroom.tunnel-session")
+        let adapter = ClashAdapter(
+            engine: TunnelManagerClashEngine(
+                tunnelManager: FailingTestTunnelManager(),
+                sessionStore: sessionStore
+            )
+        )
+        let config = SubscriptionConfig(
+            sourceURL: URL(string: "https://start-failure.example.com/subscription")!,
+            proxies: [ClashProxy(name: "Broken Relay", type: "ss", server: "3.3.3.3", port: 9000)]
+        )
+
+        for _ in 0..<2 {
+            do {
+                try await adapter.start(with: config)
+                XCTFail("Expected tunnel start failure")
+            } catch {}
+        }
+
+        let status = await adapter.status()
+        let session = await sessionStore.current()
+        XCTAssertEqual(status.lastConfigurationID, config.configurationID)
+        XCTAssertEqual(session?.configurationID, config.configurationID)
+        XCTAssertEqual(session?.runtimeState, .failed(message: "Could not start the RockeRoom tunnel."))
+    }
 }
 
 private struct FailingTestTunnelManager: TunnelManaging {
