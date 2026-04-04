@@ -5,17 +5,20 @@ struct RockeRoomApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var autoModeViewModel: AutoModeViewModel
     @StateObject private var expertConsoleViewModel: ExpertConsoleViewModel
+    @StateObject private var liveE2ERunner: LiveE2ERunner
 
     init() {
         _autoModeViewModel = StateObject(wrappedValue: AppEnvironment.makeAutoModeViewModel())
         _expertConsoleViewModel = StateObject(wrappedValue: ExpertConsoleViewModel())
+        _liveE2ERunner = StateObject(wrappedValue: LiveE2ERunner())
     }
 
     var body: some Scene {
         WindowGroup {
             AppRootView(
                 autoModeViewModel: autoModeViewModel,
-                expertConsoleViewModel: expertConsoleViewModel
+                expertConsoleViewModel: expertConsoleViewModel,
+                liveE2ERunner: liveE2ERunner
             )
             .task {
                 await autoModeViewModel.resetStoredStateIfNeeded()

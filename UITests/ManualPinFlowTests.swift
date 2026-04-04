@@ -2,13 +2,13 @@ import XCTest
 
 final class ManualPinFlowTests: XCTestCase {
     @MainActor
-    func testExpertConsoleIsReachableFromAutoMode() {
+    func testExpertConsoleIsReachableFromTabShell() {
         let app = configuredApp(storageSuite: "ui-console-reachability", resetStorage: true)
         app.launch()
 
-        importAndOptimize(in: app)
+        importAndBenchmark(in: app)
 
-        app.buttons["openExpertConsoleButton"].tap()
+        app.tabBars.buttons["Expert Console"].tap()
 
         XCTAssertTrue(app.navigationBars["Expert Console"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["2. Stable Relay"].waitForExistence(timeout: 5))
@@ -20,22 +20,22 @@ final class ManualPinFlowTests: XCTestCase {
         let app = configuredApp(storageSuite: "ui-manual-pin-flow", resetStorage: true)
         app.launch()
 
-        importAndOptimize(in: app)
+        importAndBenchmark(in: app)
 
-        app.buttons["openExpertConsoleButton"].tap()
+        app.tabBars.buttons["Expert Console"].tap()
         XCTAssertTrue(app.buttons["Pin Stable Relay"].waitForExistence(timeout: 5))
         app.buttons["Pin Stable Relay"].tap()
 
         XCTAssertTrue(app.staticTexts["Pinned"].waitForExistence(timeout: 5))
 
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.tabBars.buttons["Home"].tap()
 
-        XCTAssertTrue(app.staticTexts["Pinned provider active. Auto-switch is disabled."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Manual selection is active. Unpin it from Expert Console to return to automatic recommendation."].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Current setup: Stable Relay"].exists)
 
-        app.buttons["optimizeButton"].tap()
+        app.buttons["benchmarkButton"].tap()
 
-        XCTAssertTrue(app.staticTexts["Pinned provider active. Auto-switch is disabled."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Manual selection is active. Unpin it from Expert Console to return to automatic recommendation."].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Current setup: Stable Relay"].exists)
     }
 
@@ -44,17 +44,17 @@ final class ManualPinFlowTests: XCTestCase {
         let app = configuredApp(storageSuite: "ui-manual-unpin-flow", resetStorage: true)
         app.launch()
 
-        importAndOptimize(in: app)
+        importAndBenchmark(in: app)
 
-        app.buttons["openExpertConsoleButton"].tap()
+        app.tabBars.buttons["Expert Console"].tap()
         XCTAssertTrue(app.buttons["Pin Stable Relay"].waitForExistence(timeout: 5))
         app.buttons["Pin Stable Relay"].tap()
         XCTAssertTrue(app.buttons["Unpin Stable Relay"].waitForExistence(timeout: 5))
         app.buttons["Unpin Stable Relay"].tap()
 
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.tabBars.buttons["Home"].tap()
 
-        XCTAssertFalse(app.staticTexts["Pinned provider active. Auto-switch is disabled."].exists)
+        XCTAssertFalse(app.staticTexts["Manual selection is active. Unpin it from Expert Console to return to automatic recommendation."].exists)
         XCTAssertTrue(app.staticTexts["Current setup: Fast Relay"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Recommended setup"].exists)
     }
@@ -73,12 +73,10 @@ final class ManualPinFlowTests: XCTestCase {
     }
 
     @MainActor
-    private func importAndOptimize(in app: XCUIApplication) {
-        app.buttons["importClashSubscriptionButton"].tap()
-        XCTAssertTrue(app.buttons["useValidDemoLinkButton"].waitForExistence(timeout: 2))
+    private func importAndBenchmark(in app: XCUIApplication) {
         app.buttons["useValidDemoLinkButton"].tap()
         app.buttons["importSubscriptionButton"].tap()
-        app.buttons["optimizeButton"].tap()
+        app.buttons["benchmarkButton"].tap()
 
         XCTAssertTrue(app.staticTexts["Recommended setup"].waitForExistence(timeout: 5))
     }
