@@ -32,9 +32,11 @@ The app reads these launch environment keys:
 - `tunnel-failure`
 - `tunnel-recovery`
 
-### Destination-Aware Routing Scenarios (Sprint 1 contract placeholders)
+### Destination-Aware Routing Scenarios
 
-These scenarios are added to the E2E matrix as forward-looking contract placeholders. They currently degrade to no-op launch until the destination routing engine is implemented in later sprints.
+These scenarios exercise the destination-routing state contract introduced in Sprint 2. They replay a specific routing state by seeding `DestinationRoutingAssignments` into the shared `DestinationRoutingAssignmentStore` before app restore.
+
+The harness seeds the following state through `LiveE2EScenario.destinationAssignment`:
 
 - `auto-mode-apply` — Auto Mode applies a better route when evidence is strong
 - `manual-mode-advisory` — Manual Mode surfaces a better route but requires user confirmation
@@ -120,13 +122,13 @@ Checks to inspect per flow:
 
 ### Destination-Aware Routing Scenario Checks
 
-These checks are deferred to later sprints when the routing engine is implemented. The Sprint 1 contract only verifies that these scenarios launch without crashing and do not corrupt app state.
+These checks validate the destination-routing state contract in Sprint 2 and later. The harness seeds persisted `DestinationRoutingAssignments` into the store before `restoreState()` so the app can restore routing context across launches.
 
-- `auto-mode-apply`: app reaches stable `Home` state without crash
-- `manual-mode-advisory`: app reaches stable `Home` state without crash
-- `override-or-pin`: app reaches stable `Home` state without crash
-- `stale-or-refresh`: app reaches stable `Home` state without crash
-- `failed-reassignment`: app reaches stable `Home` state without crash
+- `auto-mode-apply`: app restores with `destinationAssignment.mode == .auto` and shows recommended setup
+- `manual-mode-advisory`: app restores with `destinationAssignment.mode == .manual` and surfaces expert console
+- `override-or-pin`: app restores with pinned provider active and shows pinned banner
+- `stale-or-refresh`: app restores with stale evidence and shows refresh hint
+- `failed-reassignment`: app restores with recoverable failure state
 
 ## Limitations
 

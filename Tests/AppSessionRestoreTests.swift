@@ -176,4 +176,69 @@ final class AppSessionRestoreTests: XCTestCase {
         XCTAssertEqual(projection.primaryState, .stale)
         XCTAssertTrue(projection.summaryText.contains("stale"))
     }
+
+    func testRestoreLoadsDestinationAssignmentWithMultiDestinationAndSelectedID() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+        let assignmentStore = DestinationRoutingAssignmentStore(store: dataStore)
+        let config = SubscriptionConfig(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            subscriptionName: "Primary",
+            proxies: [ClashProxy(name: "Fast Relay", type: "ss")]
+        )
+        try await repository.save(link: "https://example.com/sub", config: config)
+        try await sessionStore.markStopped(configurationID: config.configurationID)
+
+        var assignments = DestinationRoutingAssignments()
+        assignments.insert(
+            DestinationRoutingAssignment(
+                destinationID: "openai",
+                mode: .auto,
+                assignedProviderID: "hk-01",
+                assignedProviderLabel: "Hong Kong 01",
+                strategyName: "rule",
+                source: .automaticSelection,
+                assignedAt: 1000
+            )
+        )
+        assignments.insert(
+            DestinationRoutingAssignment(
+                destinationID: "netflix",
+                mode: .manual,
+                assignedProviderID: "jp-01",
+                assignedProviderLabel: "Japan 01",
+                strategyName: "rule",
+                source: .manualOverride,
+                assignedAt: 1500
+            )
+        )
+        assignments.selectedDestinationID = "netflix"
+        await assignmentStore.save(assignments)
+
+        let viewModel = AutoModeViewModel(
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.stopped),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor()),
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore,
+            destinationAssignmentStore: assignmentStore
+        )
+
+        await viewModel.restoreState()
+
+        XCTAssertEqual(viewModel.destinationAssignment?.count, 2)
+        XCTAssertEqual(viewModel.destinationAssignment?.selectedDestinationID, "netflix")
+        XCTAssertEqual(viewModel.destinationAssignment?["openai"]?.mode, .auto)
+        XCTAssertEqual(viewModel.destinationAssignment?["netflix"]?.mode, .manual)
+    }
 }

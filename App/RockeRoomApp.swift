@@ -22,6 +22,7 @@ struct RockeRoomApp: App {
             )
             .task {
                 await autoModeViewModel.resetStoredStateIfNeeded()
+                await seedScenarioState(into: autoModeViewModel)
                 await autoModeViewModel.restoreState()
                 expertConsoleViewModel.refresh(
                     snapshot: autoModeViewModel.snapshot,
@@ -60,5 +61,16 @@ private enum AppEnvironment {
         }
 
         return { Date(timeIntervalSince1970: seconds) }
+    }
+}
+
+/// Seeds state from the resolved E2E scenario into the AutoModeViewModel.
+///
+/// This is called between resetStoredStateIfNeeded() and restoreState() so that
+/// scenario-seeded state is present in the stores before restore loads it.
+private func seedScenarioState(into viewModel: AutoModeViewModel) async {
+    guard let scenario = LiveE2EScenario.resolved() else { return }
+    if let assignment = scenario.destinationAssignment {
+        await viewModel.seedDestinationAssignment(assignment)
     }
 }

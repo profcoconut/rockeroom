@@ -23,117 +23,153 @@ public struct RoutingDestination: Equatable, Sendable, Codable, Identifiable {
     }
 }
 
-/// Loads the v1 deterministic destination catalog from test fixtures.
+// MARK: - Routing Mode
+
+/// The control mode for destination routing.
 ///
-/// The catalog is locked as deterministic fixture files so later routing-engine work
-/// cannot silently widen scope without breaking `DestinationCatalogTests`.
-public struct DestinationCatalogLoader: Sendable {
-    private let bundle: Bundle?
+/// - `auto`: RockeRoom may auto-apply better routes when evidence is strong.
+///   Manual overrides are suppressed while auto mode is active.
+/// - `manual`: RockeRoom only advises. User must confirm before any route change.
+public enum RoutingMode: String, Codable, Equatable, Sendable {
+    case auto
+    case manual
+}
 
-    public init() {
-        self.bundle = nil
+// MARK: - Assignment Source
+
+/// Describes how the current route assignment was determined.
+public enum AssignmentSource: String, Codable, Equatable, Sendable {
+    /// The route was selected automatically by the routing policy.
+    case automaticSelection
+    /// The route was manually chosen or overridden by the user.
+    case manualOverride
+    /// The route is the initial default before any measurement has occurred.
+    case initialDefault
+}
+
+// MARK: - Destination Routing Assignment
+
+/// A durable record of the current routing assignment for one destination.
+///
+/// This is the production counterpart to the Sprint 1 test-only `RoutingState` contract.
+/// It stores the routing truth that `Home`, `Expert Console`, and later optimization
+/// code read from shared persistence.
+///
+/// Measurement evidence (metrics, confidence, freshness) lives in `ResultSnapshot`,
+/// not here. This struct carries only assignment identity, mode, and provenance.
+public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
+    public let destinationID: String
+    public let mode: RoutingMode
+    public let assignedProviderID: String
+    public let assignedProviderLabel: String
+
+    /// The routing strategy name (e.g., "rule", "direct", "proxy").
+    /// The exact set of valid strategy names is determined by the Clash configuration.
+    public let strategyName: String
+
+    /// How this assignment was determined.
+    public let source: AssignmentSource
+
+    /// When this assignment was made, in Unix time.
+    public let assignedAt: TimeInterval
+
+    /// Optional reference to the `ResultSnapshot.id` that provided the evidence
+    /// for this assignment. If set, the snapshot can be used to backfill metrics
+    /// for the destination's current quality display.
+    public let evidenceLinkSnapshotID: String?
+
+    /// Snapshot freshness at the time of assignment (0.0–1.0, 1.0 = fresh).
+    /// If `evidenceLinkSnapshotID` is set, this field preserves the freshness
+    /// context even if the linked snapshot has since been superseded.
+    public let freshness: Double?
+
+    public init(
+        destinationID: String,
+        mode: RoutingMode,
+        assignedProviderID: String,
+        assignedProviderLabel: String,
+        strategyName: String,
+        source: AssignmentSource,
+        assignedAt: TimeInterval,
+        evidenceLinkSnapshotID: String? = nil,
+        freshness: Double? = nil
+    ) {
+        self.destinationID = destinationID
+        self.mode = mode
+        self.assignedProviderID = assignedProviderID
+        self.assignedProviderLabel = assignedProviderLabel
+        self.strategyName = strategyName
+        self.source = source
+        self.assignedAt = assignedAt
+        self.evidenceLinkSnapshotID = evidenceLinkSnapshotID
+        self.freshness = freshness
+    }
+}
+
+// MARK: - Destination Routing Assignments Container
+
+/// A collection of per-destination routing assignments with one selected active destination.
+///
+/// This is the payload stored by `DestinationRoutingAssignmentStore`. It holds
+/// assignments for zero or more destinations and tracks which one is currently
+/// active (`selectedDestinationID`).
+///
+/// All destinations share the same `sourceURL` (the subscription link) so assignments
+/// remain coherent with the `ResultSnapshot` that informed them.
+public struct DestinationRoutingAssignments: Codable, Equatable, Sendable {
+    /// The subscription link these assignments are associated with.
+    public var sourceURL: String?
+
+    /// The currently selected active destination. Null if no destination is selected yet.
+    public var selectedDestinationID: String?
+
+    private var byDestinationID: [String: DestinationRoutingAssignment]
+
+    public var isEmpty: Bool { byDestinationID.isEmpty }
+    public var count: Int { byDestinationID.count }
+
+    public init(
+        sourceURL: String? = nil,
+        selectedDestinationID: String? = nil,
+        byDestinationID: [String: DestinationRoutingAssignment] = [:]
+    ) {
+        self.sourceURL = sourceURL
+        self.selectedDestinationID = selectedDestinationID
+        self.byDestinationID = byDestinationID
     }
 
-    public init(bundle: Bundle) {
-        self.bundle = bundle
-    }
-
-    /// Loads all destinations from the fixture catalog.
-    ///
-    /// Returns exactly 10 destinations in an unspecified order.
-    /// Duplicate IDs, duplicate labels, or missing required fields cause a test failure.
-    public func loadAll() -> [RoutingDestination] {
-        // Strategy:
-        // 1. If a bundle was injected, try its resources.
-        // 2. Otherwise, xcodebuild sets the working directory to the project root,
-        //    so Tests/Fixtures/routing-destinations is accessible directly.
-        // 3. Development fallback: derive path from the source file location.
-        let directoryURL: URL
-
-        if let bundle {
-            if let url = bundle.url(forResource: "routing-destinations", withExtension: nil) {
-                directoryURL = url
+    /// Returns the assignment for a given destination, or nil if none exists.
+    public subscript(destinationID: String) -> DestinationRoutingAssignment? {
+        get { byDestinationID[destinationID] }
+        set {
+            if let newValue = newValue {
+                byDestinationID[destinationID] = newValue
             } else {
-                // Fallback for when resources aren't copied into the test bundle.
-                // xcodebuild sets CWD to the project directory containing Tests/.
-                directoryURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                    .appendingPathComponent("Tests/Fixtures/routing-destinations")
-            }
-        } else if let mainURL = Bundle.main.url(forResource: "routing-destinations", withExtension: nil) {
-            directoryURL = mainURL
-        } else {
-            // RoutingDestination.swift lives at Shared/Domain/, so 3 deleteLastPathComponent
-            // calls reach the project root: Domain -> Shared -> rockeroom.
-            let projectRoot = URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent()  // Shared/Domain
-                .deletingLastPathComponent()  // Shared
-                .deletingLastPathComponent()  // project root
-            directoryURL = projectRoot
-                .appendingPathComponent("Tests")
-                .appendingPathComponent("Fixtures")
-                .appendingPathComponent("routing-destinations")
-        }
-
-        return loadFromDirectory(directoryURL)
-    }
-
-    private func loadFromDirectory(_ directoryURL: URL) -> [RoutingDestination] {
-        let fileManager = FileManager.default
-        let contents: [URL]
-        do {
-            contents = try fileManager.contentsOfDirectory(
-                at: directoryURL,
-                includingPropertiesForKeys: nil,
-                options: .skipsHiddenFiles
-            )
-        } catch {
-            return []
-        }
-
-        let yamlFiles = contents
-            .filter { $0.pathExtension == "yaml" || $0.pathExtension == "yml" }
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
-
-        return yamlFiles.compactMap { parseYAML($0) }
-    }
-
-    private func parseYAML(_ fileURL: URL) -> RoutingDestination? {
-        guard let data = try? Data(contentsOf: fileURL),
-              let content = String(data: data, encoding: .utf8) else {
-            return nil
-        }
-
-        var slug: String?
-        var label: String?
-        var ruleFamily: String?
-        var fallback: Bool = false
-
-        for line in content.components(separatedBy: .newlines) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            // Parse "key: value" format using first colon as separator.
-            guard let colonRange = trimmed.range(of: ":") else { continue }
-            let key = String(trimmed[..<colonRange.lowerBound])
-            let value = String(trimmed[colonRange.upperBound...]).trimmingCharacters(in: .whitespaces)
-
-            switch key {
-            case "id":
-                if !value.isEmpty { slug = value }
-            case "label":
-                if !value.isEmpty { label = value }
-            case "rule_family":
-                if !value.isEmpty { ruleFamily = value }
-            case "fallback":
-                fallback = value == "true"
-            default:
-                break
+                byDestinationID.removeValue(forKey: destinationID)
             }
         }
-
-        guard let slug, let label, let ruleFamily else {
-            return nil
-        }
-
-        return RoutingDestination(slug: slug, label: label, ruleFamily: ruleFamily, isFallback: fallback)
     }
 
+    /// The currently active assignment. Nil if no destination is selected or
+    /// the selected destination has no assignment.
+    public var selectedAssignment: DestinationRoutingAssignment? {
+        guard let selectedDestinationID else { return nil }
+        return byDestinationID[selectedDestinationID]
+    }
+
+    /// Inserts or replaces an assignment for a destination.
+    public mutating func insert(_ assignment: DestinationRoutingAssignment) {
+        byDestinationID[assignment.destinationID] = assignment
+    }
+
+    /// Removes all assignments and clears the selected destination.
+    public mutating func clear() {
+        byDestinationID.removeAll()
+        selectedDestinationID = nil
+    }
+
+    /// All assignments as an unordered array.
+    public var all: [DestinationRoutingAssignment] {
+        Array(byDestinationID.values)
+    }
 }
