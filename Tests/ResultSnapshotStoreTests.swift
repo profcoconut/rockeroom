@@ -39,7 +39,7 @@ final class ResultSnapshotStoreTests: XCTestCase {
                 ProbeCandidateResult(
                     candidateID: "fast",
                     label: "Fast Relay",
-                    metrics: [ProbeMetric(name: "latency", value: 120, unit: "ms", betterIsHigher: false)],
+                    metrics: [ProbeMetric(name: "Latency", value: 120, unit: "ms", betterIsHigher: false)],
                     score: 0.9,
                     confidence: 0.86,
                     freshness: 0.92

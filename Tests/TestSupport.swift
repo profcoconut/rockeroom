@@ -27,7 +27,12 @@ struct TestStubProbeExecutor: ProbeExecuting {
         ProbeCandidateResult(
             candidateID: candidate.id,
             label: candidate.name,
-            metrics: [ProbeMetric(name: "latency", value: 50, unit: "ms", betterIsHigher: false)],
+            metrics: [
+                ProbeMetric(name: "Latency", value: 50, unit: "ms", betterIsHigher: false),
+                ProbeMetric(name: "Jitter", value: 5, unit: "ms", betterIsHigher: false),
+                ProbeMetric(name: "Packet Loss", value: 0.4, unit: "%", betterIsHigher: false),
+                ProbeMetric(name: "Throughput", value: 160, unit: "Mbps", betterIsHigher: true)
+            ],
             score: 0.9,
             confidence: 0.9,
             freshness: 1.0

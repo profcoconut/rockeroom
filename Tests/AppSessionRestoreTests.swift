@@ -38,7 +38,7 @@ final class AppSessionRestoreTests: XCTestCase {
 
         XCTAssertEqual(viewModel.status, AutoModeStatus.ready)
         XCTAssertEqual(viewModel.tunnelStatus.state, ClashAdapterStatus.State.stopped)
-        XCTAssertEqual(viewModel.recommendationSummaryText, "Subscription ready. Optimize to start the tunnel and measure providers.")
+        XCTAssertEqual(viewModel.recommendationSummaryText, "Subscription ready. Run Benchmark to measure providers and get a recommendation.")
     }
 
     func testRestoreShowsPinnedCandidateFromPersistedSnapshot() async throws {
@@ -64,7 +64,7 @@ final class AppSessionRestoreTests: XCTestCase {
                     ProbeCandidateResult(
                         candidateID: "fast",
                         label: "Fast Relay",
-                        metrics: [ProbeMetric(name: "latency", value: 120, unit: "ms", betterIsHigher: false)],
+                        metrics: [ProbeMetric(name: "Latency", value: 120, unit: "ms", betterIsHigher: false)],
                         score: 0.95,
                         confidence: 0.91,
                         freshness: 0.94
@@ -72,7 +72,7 @@ final class AppSessionRestoreTests: XCTestCase {
                     ProbeCandidateResult(
                         candidateID: "stable",
                         label: "Stable Relay",
-                        metrics: [ProbeMetric(name: "latency", value: 150, unit: "ms", betterIsHigher: false)],
+                        metrics: [ProbeMetric(name: "Latency", value: 150, unit: "ms", betterIsHigher: false)],
                         score: 0.78,
                         confidence: 0.88,
                         freshness: 0.94
@@ -104,7 +104,7 @@ final class AppSessionRestoreTests: XCTestCase {
 
         XCTAssertTrue(viewModel.pinnedProvider)
         XCTAssertEqual(viewModel.currentSetupText, "Current setup: Stable Relay")
-        XCTAssertEqual(viewModel.recommendationSummaryText, "Pinned provider active. Auto-switch is disabled.")
+        XCTAssertEqual(viewModel.recommendationSummaryText, "Pinned provider active. Manual selection stays in effect until you unpin it in Expert Console.")
     }
 
     func testRestoreDecaysOldSnapshotAndShowsRefreshHintWhileTunnelIsRunning() async throws {
@@ -131,7 +131,7 @@ final class AppSessionRestoreTests: XCTestCase {
                     ProbeCandidateResult(
                         candidateID: "fast",
                         label: "Fast Relay",
-                        metrics: [ProbeMetric(name: "latency", value: 120, unit: "ms", betterIsHigher: false)],
+                        metrics: [ProbeMetric(name: "Latency", value: 120, unit: "ms", betterIsHigher: false)],
                         score: 0.95,
                         confidence: 0.91,
                         freshness: 0.95
@@ -166,7 +166,7 @@ final class AppSessionRestoreTests: XCTestCase {
         XCTAssertEqual(viewModel.status, AutoModeStatus.running)
         XCTAssertEqual(viewModel.freshnessText, "Freshness: stale")
         XCTAssertEqual(viewModel.recommendationSummaryText, "Best current setup. Measurements are getting stale, so RockeRoom is holding until a refresh.")
-        XCTAssertEqual(viewModel.refreshHintText, "Refresh available. Optimize again to update stale evidence.")
+        XCTAssertEqual(viewModel.refreshHintText, "Refresh available. Run Benchmark again to update stale evidence.")
 
         let projection = EvidenceProjection.project(
             snapshot: viewModel.snapshot,

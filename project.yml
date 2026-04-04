@@ -61,6 +61,8 @@ targets:
         excludes:
           - AppSessionRestoreTests.swift
           - AutoModeViewModelTests.swift
+          - HomeSummaryMetricTests.swift
+          - LiveE2EScenarioTests.swift
     dependencies:
       - target: SharedKit
     settings:
@@ -75,6 +77,8 @@ targets:
     sources:
       - path: Tests/AppSessionRestoreTests.swift
       - path: Tests/AutoModeViewModelTests.swift
+      - path: Tests/HomeSummaryMetricTests.swift
+      - path: Tests/LiveE2EScenarioTests.swift
       - path: Tests/TestSupport.swift
     dependencies:
       - target: RockeRoom
@@ -102,15 +106,20 @@ schemes:
     build:
       targets:
         RockeRoom: all
-        PacketTunnelExtension: [run, test]
         SharedKitTests: [test]
         RockeRoomAppTests: [test]
         RockeRoomUITests: [test]
     run:
       config: Debug
+      executable: RockeRoom
+      macroExpansion: RockeRoom
     test:
       config: Debug
+      macroExpansion: RockeRoom
       targets:
         - SharedKitTests
         - RockeRoomAppTests
         - RockeRoomUITests
+    profile:
+      config: Release
+      executable: RockeRoom

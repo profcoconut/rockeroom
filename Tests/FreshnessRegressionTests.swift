@@ -11,7 +11,7 @@ final class FreshnessRegressionTests: XCTestCase {
                 ProbeCandidateResult(
                     candidateID: "best",
                     label: "Best",
-                    metrics: [ProbeMetric(name: "latency", value: 20, unit: "ms", betterIsHigher: false)],
+                    metrics: [ProbeMetric(name: "Latency", value: 20, unit: "ms", betterIsHigher: false)],
                     score: 0.99,
                     confidence: 0.99,
                     freshness: 0.1
@@ -19,7 +19,7 @@ final class FreshnessRegressionTests: XCTestCase {
                 ProbeCandidateResult(
                     candidateID: "runnerUp",
                     label: "RunnerUp",
-                    metrics: [ProbeMetric(name: "latency", value: 200, unit: "ms", betterIsHigher: false)],
+                    metrics: [ProbeMetric(name: "Latency", value: 200, unit: "ms", betterIsHigher: false)],
                     score: 0.10,
                     confidence: 0.10,
                     freshness: 0.1
@@ -52,7 +52,7 @@ final class FreshnessRegressionTests: XCTestCase {
                 ProbeCandidateResult(
                     candidateID: "best",
                     label: "Best",
-                    metrics: [ProbeMetric(name: "latency", value: 20, unit: "ms", betterIsHigher: false)],
+                    metrics: [ProbeMetric(name: "Latency", value: 20, unit: "ms", betterIsHigher: false)],
                     score: 0.99,
                     confidence: 0.99,
                     freshness: 0.95
@@ -86,7 +86,7 @@ final class FreshnessRegressionTests: XCTestCase {
                 ProbeCandidateResult(
                     candidateID: "best",
                     label: "Best",
-                    metrics: [ProbeMetric(name: "latency", value: 20, unit: "ms", betterIsHigher: false)],
+                    metrics: [ProbeMetric(name: "Latency", value: 20, unit: "ms", betterIsHigher: false)],
                     score: 0.99,
                     confidence: 0.99,
                     freshness: 0.95

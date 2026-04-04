@@ -2,40 +2,72 @@ import XCTest
 
 final class FirstRunOptimizeFlowTests: XCTestCase {
     @MainActor
-    func testFirstRunLaunchesToAutoModeShell() {
-        let app = configuredApp(storageSuite: "ui-first-run-shell", resetStorage: true)
+    func testFirstRunLaunchesToFocusedSetupScreen() {
+        let app = configuredApp(storageSuite: "ui-first-run-setup", resetStorage: true)
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["Auto Mode"].exists)
-        XCTAssertTrue(app.buttons["importClashSubscriptionButton"].exists)
-        XCTAssertTrue(app.buttons["optimizeButton"].exists)
+        XCTAssertTrue(app.staticTexts["Add your subscription"].exists)
+        XCTAssertTrue(app.textFields["subscriptionLinkField"].exists)
+        XCTAssertTrue(app.buttons["importSubscriptionButton"].exists)
+        XCTAssertFalse(app.tabBars.buttons["Home"].exists)
     }
 
     @MainActor
-    func testClashSubscriptionImportOptimizeAndRestoreFlow() {
-        let suite = "ui-first-run-optimize-restore"
+    func testBase64VlessSubscriptionImportsThroughSetupScreen() throws {
+        let app = configuredApp(
+            storageSuite: "ui-live-format-import",
+            resetStorage: true,
+            demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
+        )
+        app.launch()
+
+        let field = app.textFields["subscriptionLinkField"]
+        field.tap()
+        field.typeText("https://example.com/live-format")
+        app.buttons["importSubscriptionButton"].tap()
+
+        XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Imported Clash subscription"].exists)
+
+        app.buttons["benchmarkButton"].tap()
+
+        XCTAssertTrue(
+            app.staticTexts.matching(
+                NSPredicate(format: "label BEGINSWITH %@", "Current setup: 🇭🇰 Hong Kong 01")
+            ).firstMatch.waitForExistence(timeout: 5)
+        )
+    }
+
+    @MainActor
+    func testClashSubscriptionImportBenchmarkAndRestoreFlow() {
+        let suite = "ui-first-run-benchmark-restore"
         let app = configuredApp(storageSuite: suite, resetStorage: true)
         app.launch()
 
-        app.buttons["importClashSubscriptionButton"].tap()
-        XCTAssertTrue(app.buttons["useValidDemoLinkButton"].waitForExistence(timeout: 2))
         app.buttons["useValidDemoLinkButton"].tap()
         app.buttons["importSubscriptionButton"].tap()
 
-        app.buttons["optimizeButton"].tap()
+        XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["benchmarkButton"].exists)
+
+        app.buttons["benchmarkButton"].tap()
 
         XCTAssertTrue(app.staticTexts["Recommended setup"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Tunnel: running"].exists)
-        app.buttons["openMarketplaceButton"].tap()
-        XCTAssertTrue(app.navigationBars["Marketplace"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["marketplaceSummaryText"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Measured recommendation"].exists)
+        XCTAssertTrue(app.staticTexts["Latency"].waitForExistence(timeout: 5))
+
+        app.tabBars.buttons["Expert Console"].tap()
+        XCTAssertTrue(app.navigationBars["Expert Console"].waitForExistence(timeout: 5))
 
         app.terminate()
 
         let relaunched = configuredApp(storageSuite: suite, resetStorage: false)
         relaunched.launch()
 
-        XCTAssertTrue(relaunched.staticTexts["Tunnel: running"].waitForExistence(timeout: 5))
+        XCTAssertTrue(relaunched.tabBars.buttons["Home"].waitForExistence(timeout: 5))
+        XCTAssertTrue(relaunched.navigationBars["Home"].waitForExistence(timeout: 5))
         XCTAssertTrue(
             relaunched.staticTexts["Recommended setup"].exists ||
             relaunched.staticTexts["Best current setup"].exists
@@ -43,42 +75,39 @@ final class FirstRunOptimizeFlowTests: XCTestCase {
         XCTAssertTrue(
             relaunched.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 5)
         )
-        relaunched.buttons["openMarketplaceButton"].tap()
-        XCTAssertTrue(relaunched.navigationBars["Marketplace"].waitForExistence(timeout: 5))
-        XCTAssertTrue(relaunched.staticTexts["marketplaceSummaryText"].waitForExistence(timeout: 5))
     }
 
     @MainActor
-    func testInvalidSubscriptionCanRecoverWithoutLosingFlow() {
-        let app = configuredApp(storageSuite: "ui-first-run-recovery", resetStorage: true)
+    func testInvalidSubscriptionCanRecoverWithoutLeavingSetupFlow() {
+        let app = configuredApp(storageSuite: "ui-setup-recovery", resetStorage: true)
         app.launch()
 
-        app.buttons["importClashSubscriptionButton"].tap()
-        XCTAssertTrue(app.buttons["useInvalidDemoLinkButton"].waitForExistence(timeout: 2))
         app.buttons["useInvalidDemoLinkButton"].tap()
         app.buttons["importSubscriptionButton"].tap()
 
-        let errorMessage = app.staticTexts["Could not load the Clash subscription link."]
-        XCTAssertTrue(errorMessage.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Could not load the Clash subscription link."].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.tabBars.buttons["Home"].exists)
 
-        app.buttons["importClashSubscriptionButton"].tap()
-        XCTAssertTrue(app.buttons["useValidDemoLinkButton"].waitForExistence(timeout: 2))
         app.buttons["useValidDemoLinkButton"].tap()
         app.buttons["importSubscriptionButton"].tap()
-        app.buttons["optimizeButton"].tap()
 
-        XCTAssertTrue(app.staticTexts["Recommended setup"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["benchmarkButton"].exists)
     }
 
     @MainActor
-    func testMarketplaceEmptyStateIsReachableBeforeOptimize() {
-        let app = configuredApp(storageSuite: "ui-marketplace-empty-state", resetStorage: true)
+    func testMarketplaceTabIsPlaceholder() {
+        let app = configuredApp(storageSuite: "ui-marketplace-placeholder", resetStorage: true)
         app.launch()
 
-        app.buttons["openMarketplaceButton"].tap()
+        app.buttons["useValidDemoLinkButton"].tap()
+        app.buttons["importSubscriptionButton"].tap()
+
+        XCTAssertTrue(app.tabBars.buttons["Marketplace"].waitForExistence(timeout: 5))
+        app.tabBars.buttons["Marketplace"].tap()
 
         XCTAssertTrue(app.navigationBars["Marketplace"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["marketplaceEmptyState"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["This tab is a placeholder in v1. RockeRoom’s core loop is import, benchmark, inspect, and control."].exists)
     }
 
     @MainActor
@@ -87,11 +116,9 @@ final class FirstRunOptimizeFlowTests: XCTestCase {
         let app = configuredApp(storageSuite: suite, resetStorage: true, nowUnix: 100)
         app.launch()
 
-        app.buttons["importClashSubscriptionButton"].tap()
-        XCTAssertTrue(app.buttons["useValidDemoLinkButton"].waitForExistence(timeout: 2))
         app.buttons["useValidDemoLinkButton"].tap()
         app.buttons["importSubscriptionButton"].tap()
-        app.buttons["optimizeButton"].tap()
+        app.buttons["benchmarkButton"].tap()
 
         XCTAssertTrue(app.staticTexts["Recommended setup"].waitForExistence(timeout: 5))
 
@@ -103,20 +130,10 @@ final class FirstRunOptimizeFlowTests: XCTestCase {
         XCTAssertTrue(relaunched.staticTexts["refreshHintText"].waitForExistence(timeout: 5))
         XCTAssertTrue(relaunched.staticTexts["Best current setup"].exists)
 
-        relaunched.buttons["openMarketplaceButton"].tap()
-        XCTAssertTrue(relaunched.navigationBars["Marketplace"].waitForExistence(timeout: 5))
-        XCTAssertTrue(relaunched.staticTexts["marketplaceSummaryText"].label.contains("stale"))
-        XCTAssertTrue(relaunched.staticTexts["Stale"].exists)
-
-        relaunched.navigationBars.buttons.element(boundBy: 0).tap()
-        relaunched.buttons["optimizeButton"].tap()
+        relaunched.buttons["benchmarkButton"].tap()
 
         XCTAssertTrue(relaunched.staticTexts["Recommended setup"].waitForExistence(timeout: 5))
         XCTAssertFalse(relaunched.staticTexts["refreshHintText"].exists)
-
-        relaunched.buttons["openMarketplaceButton"].tap()
-        XCTAssertTrue(relaunched.navigationBars["Marketplace"].waitForExistence(timeout: 5))
-        XCTAssertTrue(relaunched.staticTexts["marketplaceSummaryText"].label.contains("current"))
     }
 
     @MainActor
@@ -129,11 +146,9 @@ final class FirstRunOptimizeFlowTests: XCTestCase {
         )
         failing.launch()
 
-        failing.buttons["importClashSubscriptionButton"].tap()
-        XCTAssertTrue(failing.buttons["useValidDemoLinkButton"].waitForExistence(timeout: 2))
         failing.buttons["useValidDemoLinkButton"].tap()
         failing.buttons["importSubscriptionButton"].tap()
-        failing.buttons["optimizeButton"].tap()
+        failing.buttons["benchmarkButton"].tap()
 
         XCTAssertTrue(failing.staticTexts["Could not start the RockeRoom tunnel."].waitForExistence(timeout: 5))
         XCTAssertTrue(
@@ -147,9 +162,9 @@ final class FirstRunOptimizeFlowTests: XCTestCase {
 
         XCTAssertTrue(
             recovered.staticTexts["Could not start the RockeRoom tunnel."].waitForExistence(timeout: 5) ||
-            recovered.staticTexts["Recommendation unavailable"].exists
+            recovered.staticTexts["Benchmark unavailable"].exists
         )
-        recovered.buttons["optimizeButton"].tap()
+        recovered.buttons["benchmarkButton"].tap()
 
         XCTAssertTrue(recovered.staticTexts["Recommended setup"].waitForExistence(timeout: 5))
         XCTAssertTrue(recovered.staticTexts["Tunnel: running"].exists)
@@ -160,7 +175,8 @@ final class FirstRunOptimizeFlowTests: XCTestCase {
         storageSuite: String,
         resetStorage: Bool,
         nowUnix: Int? = nil,
-        demoTunnelFailure: Bool = false
+        demoTunnelFailure: Bool = false,
+        demoSubscriptionPayloadB64: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["ROCKEROOM_STORAGE_SUITE"] = storageSuite
@@ -176,6 +192,17 @@ final class FirstRunOptimizeFlowTests: XCTestCase {
         if demoTunnelFailure {
             app.launchEnvironment["ROCKEROOM_DEMO_TUNNEL_FAILURE"] = "1"
         }
+        if let demoSubscriptionPayloadB64 {
+            app.launchEnvironment["ROCKEROOM_DEMO_SUBSCRIPTION_PAYLOAD_B64"] = demoSubscriptionPayloadB64
+        }
         return app
+    }
+
+    private func liveSubscriptionPayloadBase64() throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("../Tests/Fixtures/live-vless-subscription.txt")
+        let data = try Data(contentsOf: url)
+        return data.base64EncodedString()
     }
 }
