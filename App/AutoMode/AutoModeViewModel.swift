@@ -138,7 +138,8 @@ final class AutoModeViewModel: ObservableObject {
 
                 let newSnapshot = await runner.run(
                     subscription: subscriptionConfig,
-                    sourceURL: subscriptionConfig.sourceURL
+                    sourceURL: subscriptionConfig.sourceURL,
+                    now: now()
                 )
                 await snapshotStore.update(newSnapshot)
                 applyRefreshAssessment(rawSnapshot: newSnapshot, trigger: .explicit)

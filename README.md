@@ -20,3 +20,13 @@ The current alpha does not claim private per-app telemetry. The observability sp
 ## Development
 
 The project is generated from `project.yml`. Use Xcode 17 / iOS 17 with the `RockeRoom` scheme.
+
+## Alpha Validation
+
+Use the integrated `RockeRoom` scheme as the alpha gate. The stable command is:
+
+```sh
+xcodebuild -project RockeRoom.xcodeproj -scheme RockeRoom -destination 'platform=iOS Simulator,name=iPhone 17' test -parallel-testing-enabled NO
+```
+
+For TestFlight and evaluator handoff steps, see `docs/release/alpha-testflight-checklist.md`.

@@ -167,5 +167,13 @@ final class AppSessionRestoreTests: XCTestCase {
         XCTAssertEqual(viewModel.freshnessText, "Freshness: stale")
         XCTAssertEqual(viewModel.recommendationSummaryText, "Best current setup. Measurements are getting stale, so RockeRoom is holding until a refresh.")
         XCTAssertEqual(viewModel.refreshHintText, "Refresh available. Optimize again to update stale evidence.")
+
+        let projection = EvidenceProjection.project(
+            snapshot: viewModel.snapshot,
+            recommendationState: viewModel.recommendationState,
+            pinState: viewModel.pinState
+        )
+        XCTAssertEqual(projection.primaryState, .stale)
+        XCTAssertTrue(projection.summaryText.contains("stale"))
     }
 }
