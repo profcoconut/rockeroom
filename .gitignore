@@ -1,0 +1,13 @@
+.DS_Store
+
+# Xcode user and build artifacts
+DerivedData/
+build/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcuserdatad/
+*.xcuserstate
+
+# SwiftPM local artifacts
+.build/
+.swiftpm/

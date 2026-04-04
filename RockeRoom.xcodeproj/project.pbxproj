@@ -1,0 +1,1094 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0664F1D418336DBF9FB47B00 /* ProbeRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8C2BCAD2794AFCCBB7E887 /* ProbeRunnerTests.swift */; };
+		0AC6DEE425065D6ED83ABE1C /* ProbeRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C296D95F45D9B79BEA48ADB6 /* ProbeRunner.swift */; };
+		10742200DB122B0120328448 /* RecommendationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C38DD9DA6C9DD38F6B7C786 /* RecommendationState.swift */; };
+		14232F9890BA0049B6A8AA25 /* ManualPinFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83DB75D0A44D4D112826927C /* ManualPinFlowTests.swift */; };
+		148E942E3ACB10A3F799ECD5 /* EvidenceProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EEACA835C72D966EC7BDE35 /* EvidenceProjection.swift */; };
+		162382821E3D4C7C308C0754 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A0F7B74426FBE5F8F6CA2C /* TestSupport.swift */; };
+		1C795FEA82F15ADD5FDE722A /* ClashSubscriptionImporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DAE4494AA77F6C83BD25632 /* ClashSubscriptionImporterTests.swift */; };
+		205557017172D18F0D80B0FC /* SharedKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 31060422180F3E2DF3824EBB /* SharedKit.framework */; };
+		27EB8413733E822037E691EB /* AutoModeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A83292C5C6FC0561C285EE2B /* AutoModeViewModelTests.swift */; };
+		364D4875302A4B652844D775 /* SharedKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 31060422180F3E2DF3824EBB /* SharedKit.framework */; };
+		36F84BDCC5CDF77455C3DFF8 /* ExpertConsoleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCAFF29566414EF2222E19CA /* ExpertConsoleViewModel.swift */; };
+		4316AE50765A66C9BF764C6B /* RockeRoomApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97007BBC7B89C7A984E564D9 /* RockeRoomApp.swift */; };
+		439EC2A376E621AB25E19273 /* SharedKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 31060422180F3E2DF3824EBB /* SharedKit.framework */; };
+		45217733A0AA54F39BC60194 /* MarketplaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD52F1312FB6F2F7319B35BC /* MarketplaceView.swift */; };
+		487BCAAAE54D66E5B80FF23B /* ResultSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8BEFFFDB710F33AE2A70FB /* ResultSnapshot.swift */; };
+		499FB3B7B3F1A9727845A024 /* ExpertConsoleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57BA70511A6137665D60F9E /* ExpertConsoleView.swift */; };
+		4AD6501D31B02C3EECBB5081 /* TunnelSessionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98D0C3D1A4A463BAD5D891F0 /* TunnelSessionStoreTests.swift */; };
+		4BA02B248BAF972B8D42333F /* SharedKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 31060422180F3E2DF3824EBB /* SharedKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		54925A756BF0DAA690B791A7 /* SubscriptionRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D78323FC701D025F05D552E9 /* SubscriptionRepositoryTests.swift */; };
+		54B22D3154AEA42C8FFEE9C7 /* TunnelSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 135A632327AD2E1158908887 /* TunnelSession.swift */; };
+		58B088F90E45502A83E11DDD /* StoredSubscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC59015A96D38CF75FD801CC /* StoredSubscription.swift */; };
+		5CFE041BD65FC3B494609BF8 /* ClashAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49FF0CE45858C2825EB7ABBA /* ClashAdapterTests.swift */; };
+		5D752D2F43607F2844FC07A2 /* MarketplaceTeaserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFC4B879CA6431BB32D4C1D9 /* MarketplaceTeaserView.swift */; };
+		688D209E04074F72CEF07963 /* SharedKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 31060422180F3E2DF3824EBB /* SharedKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		6F5CF1267865F64512BD80D8 /* ClashAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D992CDEFE74E7A28AA49BD2 /* ClashAdapter.swift */; };
+		75CB7C25A33B5D69491BA677 /* FirstRunOptimizeFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E54BE70A8AD22D6E5994C27 /* FirstRunOptimizeFlowTests.swift */; };
+		7C48DD0D4AA6823BB2F85091 /* SubscriptionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5667FC5B5D734514DBC1576 /* SubscriptionRepository.swift */; };
+		7E9E2AE06EB43448EFD3BF31 /* SharedKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 31060422180F3E2DF3824EBB /* SharedKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		7F34399396B42245F6AC1CA4 /* AutoModeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776B58D2CF932D0E585DA33C /* AutoModeViewModel.swift */; };
+		8397E5B39BDBAC019AD4C694 /* RecommendationPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 699FCA940416ECDF47215E41 /* RecommendationPolicyTests.swift */; };
+		8D165A1C2B78716F2D5C50A9 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFDDC818809C1E577238E51B /* AppRootView.swift */; };
+		8E708A0AA7CD55CFA2E38F30 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A0F7B74426FBE5F8F6CA2C /* TestSupport.swift */; };
+		90256FEBBC38CAAEF325C2FA /* AppSessionRestoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1451EA88F12C8C7AC7D03923 /* AppSessionRestoreTests.swift */; };
+		90B806D00024620610D11DF1 /* ClashSubscriptionImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B59AF895234EB05AD9749F6 /* ClashSubscriptionImporter.swift */; };
+		93A38985AD42BC3413C7A636 /* PinStateStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62A27EFC06642CDDD88FC28E /* PinStateStoreTests.swift */; };
+		944FAD94DD5E99CEA505F12B /* ProofPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6569B0F0FB009144D4891FFB /* ProofPayload.swift */; };
+		9B6DE62DA06D0F9A0F6993C8 /* SubscriptionConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58A4E0D8086E5B621211E677 /* SubscriptionConfig.swift */; };
+		9DD00110B4CE1A4087AE34A2 /* PinStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FB62332891D5896C12FEFB6 /* PinStateStore.swift */; };
+		9F9D243AAB5D11289D42AEC5 /* FreshnessRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA13A6CE145C1A946CACA95 /* FreshnessRegressionTests.swift */; };
+		A89160F9580F9DA78F6E990B /* RecommendationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2654D901D315BC6ECC02AE3D /* RecommendationPolicy.swift */; };
+		AE75FB6050318A9A4E7E32FB /* WhyThisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29AC17AE5ED017FF65F61103 /* WhyThisView.swift */; };
+		B61BC109E21289470CD6F3B1 /* MarketplaceEvidenceProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A83FBBFF1040B82E0FF73F73 /* MarketplaceEvidenceProjectionTests.swift */; };
+		B8117BBEAD0802E3C44F53B0 /* ResultSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D758C4CA88DDD0D9F286CDD /* ResultSnapshotStore.swift */; };
+		C93854D844A25177908FFA74 /* AutoModeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D456D1ABB945C327137A00F /* AutoModeView.swift */; };
+		CC4328B7CCB5A5DC274847A2 /* PersistentDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88C6AC810D287330C74F196E /* PersistentDataStore.swift */; };
+		D983C9EB49E93F736701491E /* TunnelSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46BFC57087D70F8EBB8EC0E8 /* TunnelSessionStore.swift */; };
+		DA16669BF906F82E74156A2F /* SubscriptionImportResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D3C9B67641CA6720A30C74 /* SubscriptionImportResult.swift */; };
+		E05FBCF2ED62C3674284C99E /* SubscriptionImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D816CD85622AA129DA7EEE5A /* SubscriptionImportView.swift */; };
+		E1C87030548714CB9F542B82 /* PinningPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9E0ABDC2C57B504F59ECD4 /* PinningPolicyTests.swift */; };
+		E7CC90774C131C29E8B31488 /* RefreshCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 785094D14AB47B25D4E22875 /* RefreshCoordinator.swift */; };
+		EF78C4EB4D1FD45A5F30265A /* ResultSnapshotStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBCC2B816BB0D36D03100653 /* ResultSnapshotStoreTests.swift */; };
+		F4417D90542B6C301378EB16 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98522BE112603E082BC5152A /* PacketTunnelProvider.swift */; };
+		FD79E1D8C416DA1832FBD5F5 /* SharedKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 31060422180F3E2DF3824EBB /* SharedKit.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		26FBA8FE14DF1A242B2485BE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 46C08F43DEA49B44AAEFCBAE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CEBBB39855F89C1992A921BE;
+			remoteInfo = SharedKit;
+		};
+		8C1CB83DB3F4A99F9C794A33 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 46C08F43DEA49B44AAEFCBAE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CEBBB39855F89C1992A921BE;
+			remoteInfo = SharedKit;
+		};
+		BCF028A93263BDD4628DB24B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 46C08F43DEA49B44AAEFCBAE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CEBBB39855F89C1992A921BE;
+			remoteInfo = SharedKit;
+		};
+		BDD6964310A11EDB95F1CA80 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 46C08F43DEA49B44AAEFCBAE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1D03C02009292EEC9A30EB42;
+			remoteInfo = RockeRoom;
+		};
+		F23A565F888F94914A04BAAB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 46C08F43DEA49B44AAEFCBAE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1D03C02009292EEC9A30EB42;
+			remoteInfo = RockeRoom;
+		};
+		FC5AA5A63B05D954F47BDAE3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 46C08F43DEA49B44AAEFCBAE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CEBBB39855F89C1992A921BE;
+			remoteInfo = SharedKit;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		34836A9BAF8BF591E319C38B /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				688D209E04074F72CEF07963 /* SharedKit.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		76195BF05CBE1495644EF24F /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				4BA02B248BAF972B8D42333F /* SharedKit.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E599F301E2DAF266FEBA699F /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				7E9E2AE06EB43448EFD3BF31 /* SharedKit.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0A8BEFFFDB710F33AE2A70FB /* ResultSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultSnapshot.swift; sourceTree = "<group>"; };
+		135A632327AD2E1158908887 /* TunnelSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelSession.swift; sourceTree = "<group>"; };
+		1451EA88F12C8C7AC7D03923 /* AppSessionRestoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSessionRestoreTests.swift; sourceTree = "<group>"; };
+		1F2BD5322C520ED99332B93D /* RockeRoom.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RockeRoom.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2654D901D315BC6ECC02AE3D /* RecommendationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationPolicy.swift; sourceTree = "<group>"; };
+		29AC17AE5ED017FF65F61103 /* WhyThisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhyThisView.swift; sourceTree = "<group>"; };
+		2B8C2BCAD2794AFCCBB7E887 /* ProbeRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProbeRunnerTests.swift; sourceTree = "<group>"; };
+		31060422180F3E2DF3824EBB /* SharedKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SharedKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		43A8BCA04DA1F463BFC1D1CB /* RockeRoomUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RockeRoomUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		46BFC57087D70F8EBB8EC0E8 /* TunnelSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelSessionStore.swift; sourceTree = "<group>"; };
+		49FF0CE45858C2825EB7ABBA /* ClashAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClashAdapterTests.swift; sourceTree = "<group>"; };
+		4D992CDEFE74E7A28AA49BD2 /* ClashAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClashAdapter.swift; sourceTree = "<group>"; };
+		58A4E0D8086E5B621211E677 /* SubscriptionConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionConfig.swift; sourceTree = "<group>"; };
+		5C38DD9DA6C9DD38F6B7C786 /* RecommendationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationState.swift; sourceTree = "<group>"; };
+		5D758C4CA88DDD0D9F286CDD /* ResultSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultSnapshotStore.swift; sourceTree = "<group>"; };
+		603DDB88A0D1BC74847D0ED3 /* PacketTunnelExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PacketTunnelExtension.entitlements; sourceTree = "<group>"; };
+		62A27EFC06642CDDD88FC28E /* PinStateStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinStateStoreTests.swift; sourceTree = "<group>"; };
+		64A0F7B74426FBE5F8F6CA2C /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
+		6569B0F0FB009144D4891FFB /* ProofPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProofPayload.swift; sourceTree = "<group>"; };
+		66DB5EFCB2219CC080792B52 /* SharedKitTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SharedKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		699FCA940416ECDF47215E41 /* RecommendationPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationPolicyTests.swift; sourceTree = "<group>"; };
+		6E54BE70A8AD22D6E5994C27 /* FirstRunOptimizeFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunOptimizeFlowTests.swift; sourceTree = "<group>"; };
+		6FB62332891D5896C12FEFB6 /* PinStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinStateStore.swift; sourceTree = "<group>"; };
+		75D3C9B67641CA6720A30C74 /* SubscriptionImportResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionImportResult.swift; sourceTree = "<group>"; };
+		776B58D2CF932D0E585DA33C /* AutoModeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoModeViewModel.swift; sourceTree = "<group>"; };
+		785094D14AB47B25D4E22875 /* RefreshCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshCoordinator.swift; sourceTree = "<group>"; };
+		7B59AF895234EB05AD9749F6 /* ClashSubscriptionImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClashSubscriptionImporter.swift; sourceTree = "<group>"; };
+		7EEACA835C72D966EC7BDE35 /* EvidenceProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvidenceProjection.swift; sourceTree = "<group>"; };
+		83DB75D0A44D4D112826927C /* ManualPinFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualPinFlowTests.swift; sourceTree = "<group>"; };
+		88C6AC810D287330C74F196E /* PersistentDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistentDataStore.swift; sourceTree = "<group>"; };
+		8D456D1ABB945C327137A00F /* AutoModeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoModeView.swift; sourceTree = "<group>"; };
+		97007BBC7B89C7A984E564D9 /* RockeRoomApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RockeRoomApp.swift; sourceTree = "<group>"; };
+		98522BE112603E082BC5152A /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
+		98D0C3D1A4A463BAD5D891F0 /* TunnelSessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelSessionStoreTests.swift; sourceTree = "<group>"; };
+		9DAE4494AA77F6C83BD25632 /* ClashSubscriptionImporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClashSubscriptionImporterTests.swift; sourceTree = "<group>"; };
+		A57BA70511A6137665D60F9E /* ExpertConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpertConsoleView.swift; sourceTree = "<group>"; };
+		A83292C5C6FC0561C285EE2B /* AutoModeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoModeViewModelTests.swift; sourceTree = "<group>"; };
+		A83FBBFF1040B82E0FF73F73 /* MarketplaceEvidenceProjectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceEvidenceProjectionTests.swift; sourceTree = "<group>"; };
+		AB98F8E7CA2C823BE37AA17F /* RockeRoomAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RockeRoomAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AC9E0ABDC2C57B504F59ECD4 /* PinningPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinningPolicyTests.swift; sourceTree = "<group>"; };
+		AFDDC818809C1E577238E51B /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
+		C296D95F45D9B79BEA48ADB6 /* ProbeRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProbeRunner.swift; sourceTree = "<group>"; };
+		C5667FC5B5D734514DBC1576 /* SubscriptionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionRepository.swift; sourceTree = "<group>"; };
+		CBCC2B816BB0D36D03100653 /* ResultSnapshotStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultSnapshotStoreTests.swift; sourceTree = "<group>"; };
+		CC59015A96D38CF75FD801CC /* StoredSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredSubscription.swift; sourceTree = "<group>"; };
+		CCA13A6CE145C1A946CACA95 /* FreshnessRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreshnessRegressionTests.swift; sourceTree = "<group>"; };
+		CCAFF29566414EF2222E19CA /* ExpertConsoleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpertConsoleViewModel.swift; sourceTree = "<group>"; };
+		D78323FC701D025F05D552E9 /* SubscriptionRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionRepositoryTests.swift; sourceTree = "<group>"; };
+		D816CD85622AA129DA7EEE5A /* SubscriptionImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionImportView.swift; sourceTree = "<group>"; };
+		DD52F1312FB6F2F7319B35BC /* MarketplaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceView.swift; sourceTree = "<group>"; };
+		EFC4B879CA6431BB32D4C1D9 /* MarketplaceTeaserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceTeaserView.swift; sourceTree = "<group>"; };
+		F5D5EFD08144A8A136939381 /* PacketTunnelExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PacketTunnelExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5A7C23B6A9394FE42D4EB4A6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				364D4875302A4B652844D775 /* SharedKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5E0275AE7F763B57C39E93EF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				439EC2A376E621AB25E19273 /* SharedKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		613E0DBDFEDBAE0CB2BEAA85 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FD79E1D8C416DA1832FBD5F5 /* SharedKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9D740BF693A55FA70029128D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				205557017172D18F0D80B0FC /* SharedKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0D8588ABA3FC8A4ADEBF1AE1 /* Marketplace */ = {
+			isa = PBXGroup;
+			children = (
+				EFC4B879CA6431BB32D4C1D9 /* MarketplaceTeaserView.swift */,
+				DD52F1312FB6F2F7319B35BC /* MarketplaceView.swift */,
+			);
+			path = Marketplace;
+			sourceTree = "<group>";
+		};
+		11311B0FC04C7E04A5309880 = {
+			isa = PBXGroup;
+			children = (
+				3903C6F72080C7DDF792AD89 /* App */,
+				D8B9C13701AB3972211F6184 /* Extension */,
+				EFCC6758FA55E0E6DB4AF9DE /* Shared */,
+				393161840A74034762BBC859 /* Tests */,
+				41F4291ADD04079D0AA3F782 /* UITests */,
+				574179C37FA07F5FCE5CA634 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3903C6F72080C7DDF792AD89 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AFDDC818809C1E577238E51B /* AppRootView.swift */,
+				97007BBC7B89C7A984E564D9 /* RockeRoomApp.swift */,
+				60023C22B798EE0B718CC0DB /* AutoMode */,
+				72AEA535608E954118349297 /* ExpertConsole */,
+				F31E3A5EFC81CA4F325DEB0F /* Import */,
+				0D8588ABA3FC8A4ADEBF1AE1 /* Marketplace */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		393161840A74034762BBC859 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				1451EA88F12C8C7AC7D03923 /* AppSessionRestoreTests.swift */,
+				A83292C5C6FC0561C285EE2B /* AutoModeViewModelTests.swift */,
+				49FF0CE45858C2825EB7ABBA /* ClashAdapterTests.swift */,
+				9DAE4494AA77F6C83BD25632 /* ClashSubscriptionImporterTests.swift */,
+				CCA13A6CE145C1A946CACA95 /* FreshnessRegressionTests.swift */,
+				A83FBBFF1040B82E0FF73F73 /* MarketplaceEvidenceProjectionTests.swift */,
+				AC9E0ABDC2C57B504F59ECD4 /* PinningPolicyTests.swift */,
+				62A27EFC06642CDDD88FC28E /* PinStateStoreTests.swift */,
+				2B8C2BCAD2794AFCCBB7E887 /* ProbeRunnerTests.swift */,
+				699FCA940416ECDF47215E41 /* RecommendationPolicyTests.swift */,
+				CBCC2B816BB0D36D03100653 /* ResultSnapshotStoreTests.swift */,
+				D78323FC701D025F05D552E9 /* SubscriptionRepositoryTests.swift */,
+				64A0F7B74426FBE5F8F6CA2C /* TestSupport.swift */,
+				98D0C3D1A4A463BAD5D891F0 /* TunnelSessionStoreTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		41F4291ADD04079D0AA3F782 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				6E54BE70A8AD22D6E5994C27 /* FirstRunOptimizeFlowTests.swift */,
+				83DB75D0A44D4D112826927C /* ManualPinFlowTests.swift */,
+			);
+			path = UITests;
+			sourceTree = "<group>";
+		};
+		574179C37FA07F5FCE5CA634 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F5D5EFD08144A8A136939381 /* PacketTunnelExtension.appex */,
+				1F2BD5322C520ED99332B93D /* RockeRoom.app */,
+				AB98F8E7CA2C823BE37AA17F /* RockeRoomAppTests.xctest */,
+				43A8BCA04DA1F463BFC1D1CB /* RockeRoomUITests.xctest */,
+				31060422180F3E2DF3824EBB /* SharedKit.framework */,
+				66DB5EFCB2219CC080792B52 /* SharedKitTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		60023C22B798EE0B718CC0DB /* AutoMode */ = {
+			isa = PBXGroup;
+			children = (
+				8D456D1ABB945C327137A00F /* AutoModeView.swift */,
+				776B58D2CF932D0E585DA33C /* AutoModeViewModel.swift */,
+				29AC17AE5ED017FF65F61103 /* WhyThisView.swift */,
+			);
+			path = AutoMode;
+			sourceTree = "<group>";
+		};
+		72AEA535608E954118349297 /* ExpertConsole */ = {
+			isa = PBXGroup;
+			children = (
+				A57BA70511A6137665D60F9E /* ExpertConsoleView.swift */,
+				CCAFF29566414EF2222E19CA /* ExpertConsoleViewModel.swift */,
+			);
+			path = ExpertConsole;
+			sourceTree = "<group>";
+		};
+		7893580D67B8E239207711EE /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				6569B0F0FB009144D4891FFB /* ProofPayload.swift */,
+				5C38DD9DA6C9DD38F6B7C786 /* RecommendationState.swift */,
+				CC59015A96D38CF75FD801CC /* StoredSubscription.swift */,
+				58A4E0D8086E5B621211E677 /* SubscriptionConfig.swift */,
+				75D3C9B67641CA6720A30C74 /* SubscriptionImportResult.swift */,
+				135A632327AD2E1158908887 /* TunnelSession.swift */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		D8B9C13701AB3972211F6184 /* Extension */ = {
+			isa = PBXGroup;
+			children = (
+				603DDB88A0D1BC74847D0ED3 /* PacketTunnelExtension.entitlements */,
+				98522BE112603E082BC5152A /* PacketTunnelProvider.swift */,
+			);
+			path = Extension;
+			sourceTree = "<group>";
+		};
+		EB955C2255C82C78FC9DE359 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				4D992CDEFE74E7A28AA49BD2 /* ClashAdapter.swift */,
+				7B59AF895234EB05AD9749F6 /* ClashSubscriptionImporter.swift */,
+				7EEACA835C72D966EC7BDE35 /* EvidenceProjection.swift */,
+				88C6AC810D287330C74F196E /* PersistentDataStore.swift */,
+				6FB62332891D5896C12FEFB6 /* PinStateStore.swift */,
+				C296D95F45D9B79BEA48ADB6 /* ProbeRunner.swift */,
+				2654D901D315BC6ECC02AE3D /* RecommendationPolicy.swift */,
+				785094D14AB47B25D4E22875 /* RefreshCoordinator.swift */,
+				0A8BEFFFDB710F33AE2A70FB /* ResultSnapshot.swift */,
+				5D758C4CA88DDD0D9F286CDD /* ResultSnapshotStore.swift */,
+				C5667FC5B5D734514DBC1576 /* SubscriptionRepository.swift */,
+				46BFC57087D70F8EBB8EC0E8 /* TunnelSessionStore.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		EFCC6758FA55E0E6DB4AF9DE /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				7893580D67B8E239207711EE /* Domain */,
+				EB955C2255C82C78FC9DE359 /* Engine */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		F31E3A5EFC81CA4F325DEB0F /* Import */ = {
+			isa = PBXGroup;
+			children = (
+				D816CD85622AA129DA7EEE5A /* SubscriptionImportView.swift */,
+			);
+			path = Import;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1D03C02009292EEC9A30EB42 /* RockeRoom */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B4E913693AAF5306CB1908EB /* Build configuration list for PBXNativeTarget "RockeRoom" */;
+			buildPhases = (
+				328986DFAFEB4BBE3C322D3A /* Sources */,
+				613E0DBDFEDBAE0CB2BEAA85 /* Frameworks */,
+				76195BF05CBE1495644EF24F /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C8FECD3EFCF91DD1AFA71B51 /* PBXTargetDependency */,
+			);
+			name = RockeRoom;
+			packageProductDependencies = (
+			);
+			productName = RockeRoom;
+			productReference = 1F2BD5322C520ED99332B93D /* RockeRoom.app */;
+			productType = "com.apple.product-type.application";
+		};
+		5AC990578C3BD0E1DA45455E /* PacketTunnelExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B296D30528505CBB8057D374 /* Build configuration list for PBXNativeTarget "PacketTunnelExtension" */;
+			buildPhases = (
+				223F39ADBFC0124A5FD08BC8 /* Sources */,
+				5A7C23B6A9394FE42D4EB4A6 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9B62677E9B7715A192948941 /* PBXTargetDependency */,
+			);
+			name = PacketTunnelExtension;
+			packageProductDependencies = (
+			);
+			productName = PacketTunnelExtension;
+			productReference = F5D5EFD08144A8A136939381 /* PacketTunnelExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		60379E3521C455E18029F73F /* RockeRoomUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 663D4000F3C38866914B5271 /* Build configuration list for PBXNativeTarget "RockeRoomUITests" */;
+			buildPhases = (
+				AEF96AAC90B2C633A70F43B5 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B67F2B7C7EF0FA532947B614 /* PBXTargetDependency */,
+			);
+			name = RockeRoomUITests;
+			packageProductDependencies = (
+			);
+			productName = RockeRoomUITests;
+			productReference = 43A8BCA04DA1F463BFC1D1CB /* RockeRoomUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		7366441DC5992C3C00A240BB /* RockeRoomAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 31D81B7D530CBE5F39900833 /* Build configuration list for PBXNativeTarget "RockeRoomAppTests" */;
+			buildPhases = (
+				7EFF641FB2A17843FD674A16 /* Sources */,
+				9D740BF693A55FA70029128D /* Frameworks */,
+				E599F301E2DAF266FEBA699F /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BEE87DD258ED43895E754D24 /* PBXTargetDependency */,
+				8E52EE049690E729CDA23019 /* PBXTargetDependency */,
+			);
+			name = RockeRoomAppTests;
+			packageProductDependencies = (
+			);
+			productName = RockeRoomAppTests;
+			productReference = AB98F8E7CA2C823BE37AA17F /* RockeRoomAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C8997503EC214735958D95BA /* SharedKitTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F79020060BEA7ACC7F9F6A33 /* Build configuration list for PBXNativeTarget "SharedKitTests" */;
+			buildPhases = (
+				6150F32B5685E3BBC5ADDE9F /* Sources */,
+				5E0275AE7F763B57C39E93EF /* Frameworks */,
+				34836A9BAF8BF591E319C38B /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				34E4819E333C8AB28F1C6523 /* PBXTargetDependency */,
+			);
+			name = SharedKitTests;
+			packageProductDependencies = (
+			);
+			productName = SharedKitTests;
+			productReference = 66DB5EFCB2219CC080792B52 /* SharedKitTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		CEBBB39855F89C1992A921BE /* SharedKit */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3D992FC45FAE34A71D4FCFB1 /* Build configuration list for PBXNativeTarget "SharedKit" */;
+			buildPhases = (
+				EBF1844EE5E97F0CC0015805 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SharedKit;
+			packageProductDependencies = (
+			);
+			productName = SharedKit;
+			productReference = 31060422180F3E2DF3824EBB /* SharedKit.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		46C08F43DEA49B44AAEFCBAE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					60379E3521C455E18029F73F = {
+						TestTargetID = 1D03C02009292EEC9A30EB42;
+					};
+				};
+			};
+			buildConfigurationList = EA7E4B547D50BF1F542E8C86 /* Build configuration list for PBXProject "RockeRoom" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 11311B0FC04C7E04A5309880;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 574179C37FA07F5FCE5CA634 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5AC990578C3BD0E1DA45455E /* PacketTunnelExtension */,
+				1D03C02009292EEC9A30EB42 /* RockeRoom */,
+				7366441DC5992C3C00A240BB /* RockeRoomAppTests */,
+				60379E3521C455E18029F73F /* RockeRoomUITests */,
+				CEBBB39855F89C1992A921BE /* SharedKit */,
+				C8997503EC214735958D95BA /* SharedKitTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		223F39ADBFC0124A5FD08BC8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4417D90542B6C301378EB16 /* PacketTunnelProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		328986DFAFEB4BBE3C322D3A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D165A1C2B78716F2D5C50A9 /* AppRootView.swift in Sources */,
+				C93854D844A25177908FFA74 /* AutoModeView.swift in Sources */,
+				7F34399396B42245F6AC1CA4 /* AutoModeViewModel.swift in Sources */,
+				499FB3B7B3F1A9727845A024 /* ExpertConsoleView.swift in Sources */,
+				36F84BDCC5CDF77455C3DFF8 /* ExpertConsoleViewModel.swift in Sources */,
+				5D752D2F43607F2844FC07A2 /* MarketplaceTeaserView.swift in Sources */,
+				45217733A0AA54F39BC60194 /* MarketplaceView.swift in Sources */,
+				4316AE50765A66C9BF764C6B /* RockeRoomApp.swift in Sources */,
+				E05FBCF2ED62C3674284C99E /* SubscriptionImportView.swift in Sources */,
+				AE75FB6050318A9A4E7E32FB /* WhyThisView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6150F32B5685E3BBC5ADDE9F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5CFE041BD65FC3B494609BF8 /* ClashAdapterTests.swift in Sources */,
+				1C795FEA82F15ADD5FDE722A /* ClashSubscriptionImporterTests.swift in Sources */,
+				9F9D243AAB5D11289D42AEC5 /* FreshnessRegressionTests.swift in Sources */,
+				B61BC109E21289470CD6F3B1 /* MarketplaceEvidenceProjectionTests.swift in Sources */,
+				93A38985AD42BC3413C7A636 /* PinStateStoreTests.swift in Sources */,
+				E1C87030548714CB9F542B82 /* PinningPolicyTests.swift in Sources */,
+				0664F1D418336DBF9FB47B00 /* ProbeRunnerTests.swift in Sources */,
+				8397E5B39BDBAC019AD4C694 /* RecommendationPolicyTests.swift in Sources */,
+				EF78C4EB4D1FD45A5F30265A /* ResultSnapshotStoreTests.swift in Sources */,
+				54925A756BF0DAA690B791A7 /* SubscriptionRepositoryTests.swift in Sources */,
+				162382821E3D4C7C308C0754 /* TestSupport.swift in Sources */,
+				4AD6501D31B02C3EECBB5081 /* TunnelSessionStoreTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7EFF641FB2A17843FD674A16 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				90256FEBBC38CAAEF325C2FA /* AppSessionRestoreTests.swift in Sources */,
+				27EB8413733E822037E691EB /* AutoModeViewModelTests.swift in Sources */,
+				8E708A0AA7CD55CFA2E38F30 /* TestSupport.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AEF96AAC90B2C633A70F43B5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				75CB7C25A33B5D69491BA677 /* FirstRunOptimizeFlowTests.swift in Sources */,
+				14232F9890BA0049B6A8AA25 /* ManualPinFlowTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EBF1844EE5E97F0CC0015805 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6F5CF1267865F64512BD80D8 /* ClashAdapter.swift in Sources */,
+				90B806D00024620610D11DF1 /* ClashSubscriptionImporter.swift in Sources */,
+				148E942E3ACB10A3F799ECD5 /* EvidenceProjection.swift in Sources */,
+				CC4328B7CCB5A5DC274847A2 /* PersistentDataStore.swift in Sources */,
+				9DD00110B4CE1A4087AE34A2 /* PinStateStore.swift in Sources */,
+				0AC6DEE425065D6ED83ABE1C /* ProbeRunner.swift in Sources */,
+				944FAD94DD5E99CEA505F12B /* ProofPayload.swift in Sources */,
+				A89160F9580F9DA78F6E990B /* RecommendationPolicy.swift in Sources */,
+				10742200DB122B0120328448 /* RecommendationState.swift in Sources */,
+				E7CC90774C131C29E8B31488 /* RefreshCoordinator.swift in Sources */,
+				487BCAAAE54D66E5B80FF23B /* ResultSnapshot.swift in Sources */,
+				B8117BBEAD0802E3C44F53B0 /* ResultSnapshotStore.swift in Sources */,
+				58B088F90E45502A83E11DDD /* StoredSubscription.swift in Sources */,
+				9B6DE62DA06D0F9A0F6993C8 /* SubscriptionConfig.swift in Sources */,
+				DA16669BF906F82E74156A2F /* SubscriptionImportResult.swift in Sources */,
+				7C48DD0D4AA6823BB2F85091 /* SubscriptionRepository.swift in Sources */,
+				54B22D3154AEA42C8FFEE9C7 /* TunnelSession.swift in Sources */,
+				D983C9EB49E93F736701491E /* TunnelSessionStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		34E4819E333C8AB28F1C6523 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CEBBB39855F89C1992A921BE /* SharedKit */;
+			targetProxy = FC5AA5A63B05D954F47BDAE3 /* PBXContainerItemProxy */;
+		};
+		8E52EE049690E729CDA23019 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CEBBB39855F89C1992A921BE /* SharedKit */;
+			targetProxy = BCF028A93263BDD4628DB24B /* PBXContainerItemProxy */;
+		};
+		9B62677E9B7715A192948941 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CEBBB39855F89C1992A921BE /* SharedKit */;
+			targetProxy = 26FBA8FE14DF1A242B2485BE /* PBXContainerItemProxy */;
+		};
+		B67F2B7C7EF0FA532947B614 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1D03C02009292EEC9A30EB42 /* RockeRoom */;
+			targetProxy = BDD6964310A11EDB95F1CA80 /* PBXContainerItemProxy */;
+		};
+		BEE87DD258ED43895E754D24 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1D03C02009292EEC9A30EB42 /* RockeRoom */;
+			targetProxy = F23A565F888F94914A04BAAB /* PBXContainerItemProxy */;
+		};
+		C8FECD3EFCF91DD1AFA71B51 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CEBBB39855F89C1992A921BE /* SharedKit */;
+			targetProxy = 8C1CB83DB3F4A99F9C794A33 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0B0FD72C851AC3B4D5089587 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom.sharedkit;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+		28FAE88FC5214E0A18DC77AC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		5ED43C8C9415AFBE6F4E1F2D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = RockeRoom;
+			};
+			name = Release;
+		};
+		681FF3C4C308D95455F10941 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom.sharedkit;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		687F23996D9B39153C9FD1F7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		692F4298CD3CDC56D2AD0A56 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		7D5C8B509003D5955CDCB5D7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		A6132C463991CEAA128F605E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = RockeRoom;
+			};
+			name = Debug;
+		};
+		BBAA3E320091EA553E0FCBE1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Extension/PacketTunnelExtension.entitlements;
+				INFOPLIST_KEY_CFBundleDisplayName = RockeRoomTunnel;
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.networkextension.packet-tunnel";
+				INFOPLIST_KEY_NSExtension_NSExtensionPrincipalClass = "$(PRODUCT_MODULE_NAME).PacketTunnelProvider";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom.PacketTunnelExtension;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C6AB07E1D1273AEC042672FC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = NO;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		DA3BEB317B618E82FC4B8149 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Extension/PacketTunnelExtension.entitlements;
+				INFOPLIST_KEY_CFBundleDisplayName = RockeRoomTunnel;
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.networkextension.packet-tunnel";
+				INFOPLIST_KEY_NSExtension_NSExtensionPrincipalClass = "$(PRODUCT_MODULE_NAME).PacketTunnelProvider";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom.PacketTunnelExtension;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		DF24FB2F228ECB4EBB1A9627 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = NO;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F248F132A3994F78FD35116B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom.apptests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RockeRoom.app/RockeRoom";
+			};
+			name = Debug;
+		};
+		F979784F7886A50B28D3AFF9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.profcoconut.rockeroom.apptests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RockeRoom.app/RockeRoom";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		31D81B7D530CBE5F39900833 /* Build configuration list for PBXNativeTarget "RockeRoomAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F248F132A3994F78FD35116B /* Debug */,
+				F979784F7886A50B28D3AFF9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3D992FC45FAE34A71D4FCFB1 /* Build configuration list for PBXNativeTarget "SharedKit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0B0FD72C851AC3B4D5089587 /* Debug */,
+				681FF3C4C308D95455F10941 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		663D4000F3C38866914B5271 /* Build configuration list for PBXNativeTarget "RockeRoomUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A6132C463991CEAA128F605E /* Debug */,
+				5ED43C8C9415AFBE6F4E1F2D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B296D30528505CBB8057D374 /* Build configuration list for PBXNativeTarget "PacketTunnelExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA3BEB317B618E82FC4B8149 /* Debug */,
+				BBAA3E320091EA553E0FCBE1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B4E913693AAF5306CB1908EB /* Build configuration list for PBXNativeTarget "RockeRoom" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF24FB2F228ECB4EBB1A9627 /* Debug */,
+				C6AB07E1D1273AEC042672FC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EA7E4B547D50BF1F542E8C86 /* Build configuration list for PBXProject "RockeRoom" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				692F4298CD3CDC56D2AD0A56 /* Debug */,
+				7D5C8B509003D5955CDCB5D7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F79020060BEA7ACC7F9F6A33 /* Build configuration list for PBXNativeTarget "SharedKitTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				687F23996D9B39153C9FD1F7 /* Debug */,
+				28FAE88FC5214E0A18DC77AC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 46C08F43DEA49B44AAEFCBAE /* Project object */;
+}
