@@ -4,30 +4,6 @@ import Foundation
 @testable import RockeRoom
 @testable import SharedKit
 
-/// Tests for AutoModeViewModel routing state and recommendation behavior.
-///
-/// ## Routing Integration Note
-///
-/// The current tests exercise provider-level routing state — which proxy is active,
-/// whether it is pinned, and whether evidence is fresh enough to act on.
-///
-/// When destination routing is implemented, the ViewModel will add a `selectedDestination`
-/// dimension. The `recommendationState`, `currentSetupText`, `homeMetricSummaries`,
-/// and `homeRecommendationStatus` will all become destination-specific. For example:
-/// - `currentSetupText` will reflect the active destination's measured provider, not just
-///   the globally "current" provider
-/// - `recommendationState` will indicate whether a better route exists *for that destination*
-/// - The existing "pinned" hold reason will be destination-scoped: a pin on "Netflix" does not
-///   affect routing decisions for "OpenAI"
-///
-/// The `recommendationState` enum cases (`.applying`, `.holding`, `.advisory`, `.idle`)
-/// will remain structurally similar but their associated data will carry destination context.
-/// Tests that today assert on `hold.reason == .pinned` will need to assert on
-/// `destinationID == selectedDestination && hold.reason == .pinned` in later sprints.
-///
-/// This test class serves as the contract anchor for the routing-to-viewmodel integration
-/// point. When destination routing lands, these tests verify the ViewModel's existing
-/// behavior remains correct while adding destination-context assertions.
 @MainActor
 final class AutoModeViewModelTests: XCTestCase {
     func testRestoreStateLoadsStoredSubscriptionAndRunningTunnelStatus() async throws {
@@ -178,6 +154,82 @@ final class AutoModeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.currentSetupText, "Current setup: Stable Relay")
     }
 
+    func testRestoreStateLoadsPersistedRecommendedCandidateAsCurrentSetup() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+        let config = SubscriptionConfig(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            subscriptionName: "Primary",
+            proxies: [
+                ClashProxy(name: "Fast Relay", type: "ss"),
+                ClashProxy(name: "Stable Relay", type: "vmess")
+            ]
+        )
+        try await repository.save(link: "https://example.com/sub", config: config)
+        try await sessionStore.sync(
+            status: ClashAdapterStatus(state: .running, lastConfigurationID: config.configurationID),
+            configurationID: config.configurationID
+        )
+        await snapshotStore.update(
+            ResultSnapshot(
+                sourceURL: config.sourceURL,
+                candidates: [
+                    ProbeCandidateResult(
+                        candidateID: "fast",
+                        label: "Fast Relay",
+                        metrics: [ProbeMetric(name: "Latency", value: 42, unit: "ms", betterIsHigher: false)],
+                        score: 0.94,
+                        confidence: 0.91,
+                        freshness: 0.95
+                    ),
+                    ProbeCandidateResult(
+                        candidateID: "stable",
+                        label: "Stable Relay",
+                        metrics: [ProbeMetric(name: "Latency", value: 61, unit: "ms", betterIsHigher: false)],
+                        score: 0.72,
+                        confidence: 0.88,
+                        freshness: 0.95
+                    )
+                ],
+                overallConfidence: 0.91,
+                freshness: 0.95,
+                isPartial: false
+            )
+        )
+
+        let viewModel = AutoModeViewModel(
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.running),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor()),
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore
+        )
+
+        await viewModel.restoreState()
+
+        guard case .recommended(let summary) = viewModel.recommendationState else {
+            return XCTFail("Expected a restored recommendation.")
+        }
+
+        XCTAssertEqual(summary.selectedCandidateID, "fast")
+        XCTAssertEqual(viewModel.currentTitle, "Recommended setup")
+        XCTAssertEqual(viewModel.currentSetupText, "Current setup: Fast Relay")
+        XCTAssertEqual(
+            viewModel.recommendationSummaryText,
+            "Why this: Fast Relay scored highest with fresh, confident measurements."
+        )
+    }
+
     func testPinnedCandidateRemainsCurrentSetupWhenEvidenceTurnsStale() async throws {
         let dataStore = InMemoryDataStore()
         let repository = SubscriptionRepository(store: dataStore)
@@ -249,5 +301,60 @@ final class AutoModeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.currentSetupText, "Current setup: Stable Relay")
         XCTAssertTrue(viewModel.pinnedProvider)
         XCTAssertEqual(viewModel.freshnessText, "Freshness: stale")
+    }
+
+    func testRestoreStateLoadsPersistedDestinationAssignments() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+        let assignmentStore = DestinationRoutingAssignmentStore(store: dataStore)
+        let config = SubscriptionConfig(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            subscriptionName: "Primary",
+            proxies: [ClashProxy(name: "Fast Relay", type: "ss")]
+        )
+        try await repository.save(link: "https://example.com/sub", config: config)
+        try await sessionStore.markStopped(configurationID: config.configurationID)
+
+        var assignments = DestinationRoutingAssignments()
+        assignments.sourceURL = "https://example.com/sub"
+        assignments.insert(
+            DestinationRoutingAssignment(
+                destinationID: "openai",
+                mode: .auto,
+                assignedProviderID: "hk-01",
+                assignedProviderLabel: "Hong Kong 01",
+                strategyName: "rule",
+                source: .automaticSelection,
+                assignedAt: 1000
+            )
+        )
+        assignments.selectedDestinationID = "openai"
+        await assignmentStore.save(assignments)
+
+        let viewModel = AutoModeViewModel(
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.stopped),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor()),
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore,
+            destinationAssignmentStore: assignmentStore
+        )
+
+        await viewModel.restoreState()
+
+        XCTAssertEqual(viewModel.destinationAssignment?.count, 1)
+        XCTAssertEqual(viewModel.destinationAssignment?.selectedDestinationID, "openai")
+        XCTAssertEqual(viewModel.destinationAssignment?["openai"]?.assignedProviderID, "hk-01")
+        XCTAssertEqual(viewModel.destinationAssignment?["openai"]?.mode, .auto)
     }
 }

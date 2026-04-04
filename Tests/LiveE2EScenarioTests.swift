@@ -14,7 +14,7 @@ final class LiveE2EScenarioTests: XCTestCase {
 
         XCTAssertEqual(
             scenario,
-            LiveE2EScenario(kind: .expertConsole, subscriptionLink: "https://example.com/live")
+            LiveE2EScenario(kind: .expertConsole, subscriptionLink: "https://example.com/live", destinationAssignment: nil)
         )
     }
 
@@ -95,94 +95,45 @@ final class LiveE2EScenarioTests: XCTestCase {
 
     // MARK: - Destination-Aware Routing Scenario Runner Behavior
 
-    func testAutoModeApplyScenarioProducesNoActionsBeforeRuntimeImpl() {
-        // Until the routing engine is implemented, autoModeApply degrades to a no-op.
-        // This test verifies the contract shape without committing to runtime behavior.
+    func testAutoModeApplyScenarioReplaysCurrentRecommendedHomeState() {
         let runner = LiveE2ERunner(
             scenario: LiveE2EScenario(kind: .autoModeApply, subscriptionLink: "https://example.com/live")
         )
 
-        let state = LiveE2ERunner.State(
-            hasImportedSubscription: true,
-            importErrorMessage: nil,
-            isImporting: false,
-            hasBenchmarkResults: true,
-            isBenchmarkInFlight: false,
-            selectedTab: .home,
-            refreshHintText: nil,
-            pinnedCandidateID: nil,
-            rankedCandidates: [
-                .init(candidateID: "fast", title: "Fast Relay"),
-                .init(candidateID: "stable", title: "Stable Relay")
-            ]
+        XCTAssertEqual(
+            runner.nextAction(
+                for: makeState(
+                    hasImportedSubscription: true,
+                    hasBenchmarkResults: true,
+                    selectedTab: .expertConsole
+                )
+            ),
+            .selectTab(.home)
         )
-
-        var actions: [LiveE2ERunner.Action] = []
-        let record = LiveE2ERunner.Actions(
-            importSubscription: { actions.append(.importSubscription($0)) },
-            runBenchmark: { actions.append(.runBenchmark) },
-            selectTab: { actions.append(.selectTab($0)) },
-            pinCandidate: { actions.append(.pinCandidate($0)) },
-            unpinCandidate: { actions.append(.unpinCandidate) }
-        )
-
-        runner.advance(state: state, actions: record)
-        XCTAssertEqual(actions, [], "autoModeApply should produce no actions until routing engine is implemented")
     }
 
-    func testManualModeAdvisoryScenarioProducesNoActionsBeforeRuntimeImpl() {
+    func testManualModeAdvisoryScenarioOpensExpertConsoleForInspection() {
         let runner = LiveE2ERunner(
             scenario: LiveE2EScenario(kind: .manualModeAdvisory, subscriptionLink: "https://example.com/live")
         )
 
-        let state = LiveE2ERunner.State(
-            hasImportedSubscription: true,
-            importErrorMessage: nil,
-            isImporting: false,
-            hasBenchmarkResults: true,
-            isBenchmarkInFlight: false,
-            selectedTab: .home,
-            refreshHintText: nil,
-            pinnedCandidateID: nil,
-            rankedCandidates: [
-                .init(candidateID: "fast", title: "Fast Relay"),
-                .init(candidateID: "stable", title: "Stable Relay")
-            ]
+        XCTAssertEqual(
+            runner.nextAction(
+                for: makeState(
+                    hasImportedSubscription: true,
+                    hasBenchmarkResults: true,
+                    selectedTab: .home
+                )
+            ),
+            .selectTab(.expertConsole)
         )
-
-        var actions: [LiveE2ERunner.Action] = []
-        let record = LiveE2ERunner.Actions(
-            importSubscription: { actions.append(.importSubscription($0)) },
-            runBenchmark: { actions.append(.runBenchmark) },
-            selectTab: { actions.append(.selectTab($0)) },
-            pinCandidate: { actions.append(.pinCandidate($0)) },
-            unpinCandidate: { actions.append(.unpinCandidate) }
-        )
-
-        runner.advance(state: state, actions: record)
-        XCTAssertEqual(actions, [], "manualModeAdvisory should produce no actions until routing engine is implemented")
     }
 
-    func testOverrideOrPinScenarioProducesNoActionsBeforeRuntimeImpl() {
+    func testOverrideOrPinScenarioPinsStableCandidateThenReturnsHome() {
         let runner = LiveE2ERunner(
             scenario: LiveE2EScenario(kind: .overrideOrPin, subscriptionLink: "https://example.com/live")
         )
 
-        let state = LiveE2ERunner.State(
-            hasImportedSubscription: true,
-            importErrorMessage: nil,
-            isImporting: false,
-            hasBenchmarkResults: true,
-            isBenchmarkInFlight: false,
-            selectedTab: .home,
-            refreshHintText: nil,
-            pinnedCandidateID: nil,
-            rankedCandidates: [
-                .init(candidateID: "fast", title: "Fast Relay"),
-                .init(candidateID: "stable", title: "Stable Relay")
-            ]
-        )
-
         var actions: [LiveE2ERunner.Action] = []
         let record = LiveE2ERunner.Actions(
             importSubscription: { actions.append(.importSubscription($0)) },
@@ -192,74 +143,59 @@ final class LiveE2EScenarioTests: XCTestCase {
             unpinCandidate: { actions.append(.unpinCandidate) }
         )
 
-        runner.advance(state: state, actions: record)
-        XCTAssertEqual(actions, [], "overrideOrPin should produce no actions until routing engine is implemented")
+        runner.advance(
+            state: makeState(
+                hasImportedSubscription: true,
+                hasBenchmarkResults: true,
+                selectedTab: .expertConsole
+            ),
+            actions: record
+        )
+        runner.advance(
+            state: makeState(
+                hasImportedSubscription: true,
+                hasBenchmarkResults: true,
+                selectedTab: .expertConsole,
+                pinnedCandidateID: "stable"
+            ),
+            actions: record
+        )
+
+        XCTAssertEqual(actions, [.pinCandidate("stable"), .selectTab(.home)])
     }
 
-    func testStaleOrRefreshScenarioProducesNoActionsBeforeRuntimeImpl() {
+    func testStaleOrRefreshScenarioReplaysTheStaleHintContract() {
         let runner = LiveE2ERunner(
             scenario: LiveE2EScenario(kind: .staleOrRefresh, subscriptionLink: "https://example.com/live")
         )
 
-        let state = LiveE2ERunner.State(
-            hasImportedSubscription: true,
-            importErrorMessage: nil,
-            isImporting: false,
-            hasBenchmarkResults: true,
-            isBenchmarkInFlight: false,
-            selectedTab: .home,
-            refreshHintText: nil,
-            pinnedCandidateID: nil,
-            rankedCandidates: [
-                .init(candidateID: "fast", title: "Fast Relay"),
-                .init(candidateID: "stable", title: "Stable Relay")
-            ]
+        XCTAssertEqual(
+            runner.nextAction(
+                for: makeState(
+                    hasImportedSubscription: true,
+                    hasBenchmarkResults: true,
+                    selectedTab: .expertConsole
+                )
+            ),
+            .selectTab(.home)
         )
-
-        var actions: [LiveE2ERunner.Action] = []
-        let record = LiveE2ERunner.Actions(
-            importSubscription: { actions.append(.importSubscription($0)) },
-            runBenchmark: { actions.append(.runBenchmark) },
-            selectTab: { actions.append(.selectTab($0)) },
-            pinCandidate: { actions.append(.pinCandidate($0)) },
-            unpinCandidate: { actions.append(.unpinCandidate) }
-        )
-
-        runner.advance(state: state, actions: record)
-        XCTAssertEqual(actions, [], "staleOrRefresh should produce no actions until routing engine is implemented")
     }
 
-    func testFailedReassignmentScenarioProducesNoActionsBeforeRuntimeImpl() {
+    func testFailedReassignmentScenarioReusesRecoverableFailureFlow() {
         let runner = LiveE2ERunner(
             scenario: LiveE2EScenario(kind: .failedReassignment, subscriptionLink: "https://example.com/live")
         )
 
-        let state = LiveE2ERunner.State(
-            hasImportedSubscription: true,
-            importErrorMessage: nil,
-            isImporting: false,
-            hasBenchmarkResults: true,
-            isBenchmarkInFlight: false,
-            selectedTab: .home,
-            refreshHintText: nil,
-            pinnedCandidateID: nil,
-            rankedCandidates: [
-                .init(candidateID: "fast", title: "Fast Relay"),
-                .init(candidateID: "stable", title: "Stable Relay")
-            ]
+        XCTAssertEqual(
+            runner.nextAction(
+                for: makeState(
+                    hasImportedSubscription: true,
+                    hasBenchmarkResults: false,
+                    selectedTab: .home
+                )
+            ),
+            .runBenchmark
         )
-
-        var actions: [LiveE2ERunner.Action] = []
-        let record = LiveE2ERunner.Actions(
-            importSubscription: { actions.append(.importSubscription($0)) },
-            runBenchmark: { actions.append(.runBenchmark) },
-            selectTab: { actions.append(.selectTab($0)) },
-            pinCandidate: { actions.append(.pinCandidate($0)) },
-            unpinCandidate: { actions.append(.unpinCandidate) }
-        )
-
-        runner.advance(state: state, actions: record)
-        XCTAssertEqual(actions, [], "failedReassignment should produce no actions until routing engine is implemented")
     }
 
     func testPinUnpinScenarioDoesNotReplayPinAfterUnpin() {
@@ -325,6 +261,28 @@ final class LiveE2EScenarioTests: XCTestCase {
                 .pinCandidate("stable"),
                 .unpinCandidate,
                 .selectTab(.home)
+            ]
+        )
+    }
+
+    private func makeState(
+        hasImportedSubscription: Bool,
+        hasBenchmarkResults: Bool,
+        selectedTab: MainTab,
+        pinnedCandidateID: String? = nil
+    ) -> LiveE2ERunner.State {
+        LiveE2ERunner.State(
+            hasImportedSubscription: hasImportedSubscription,
+            importErrorMessage: nil,
+            isImporting: false,
+            hasBenchmarkResults: hasBenchmarkResults,
+            isBenchmarkInFlight: false,
+            selectedTab: selectedTab,
+            refreshHintText: nil,
+            pinnedCandidateID: pinnedCandidateID,
+            rankedCandidates: [
+                .init(candidateID: "fast", title: "Fast Relay"),
+                .init(candidateID: "stable", title: "Stable Relay")
             ]
         )
     }

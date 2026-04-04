@@ -19,9 +19,11 @@ final class AutoModeViewModel: ObservableObject {
     private let subscriptionRepository: SubscriptionRepository
     private let tunnelSessionStore: TunnelSessionStore
     private let pinStateStore: PinStateStore
+    private let destinationAssignmentStore: DestinationRoutingAssignmentStore
     private let now: @Sendable () -> Date
     private var subscriptionConfig: SubscriptionConfig?
     @Published private(set) var pinState: PinState = .none
+    @Published private(set) var destinationAssignment: DestinationRoutingAssignments?
 
     var hasImportedSubscription: Bool {
         subscriptionConfig != nil
@@ -50,11 +52,13 @@ final class AutoModeViewModel: ObservableObject {
         subscriptionRepository: SubscriptionRepository = SubscriptionRepository(),
         tunnelSessionStore: TunnelSessionStore = TunnelSessionStore(),
         pinStateStore: PinStateStore = PinStateStore(),
+        destinationAssignmentStore: DestinationRoutingAssignmentStore = DestinationRoutingAssignmentStore(),
         now: @escaping @Sendable () -> Date = Date.init
     ) {
         self.subscriptionRepository = subscriptionRepository
         self.tunnelSessionStore = tunnelSessionStore
         self.pinStateStore = pinStateStore
+        self.destinationAssignmentStore = destinationAssignmentStore
         self.importer = importer ?? Self.makeImporter()
         self.adapter = adapter ?? Self.makeAdapter(tunnelSessionStore: tunnelSessionStore)
         self.runner = runner ?? ProbeRunner(executor: DemoProbeExecutor())
@@ -70,6 +74,7 @@ final class AutoModeViewModel: ObservableObject {
         await tunnelSessionStore.clear()
         await snapshotStore.clear()
         await pinStateStore.clear()
+        await destinationAssignmentStore.clear()
         subscriptionConfig = nil
         snapshot = nil
         pinState = .none
@@ -77,6 +82,16 @@ final class AutoModeViewModel: ObservableObject {
         refreshHintText = nil
         tunnelStatus = ClashAdapterStatus()
         status = .idle
+        destinationAssignment = nil
+    }
+
+    /// Seeds destination assignment state for E2E harness purposes.
+    /// Saves to the store and updates in-memory state without triggering full restore.
+    /// The in-memory destinationAssignment is updated so subsequent restoreState() calls
+    /// don't overwrite it (restoreState() only sets it if the store was previously nil).
+    func seedDestinationAssignment(_ assignments: DestinationRoutingAssignments) async {
+        await destinationAssignmentStore.save(assignments)
+        destinationAssignment = assignments
     }
 
     func restoreState() async {
@@ -84,6 +99,7 @@ final class AutoModeViewModel: ObservableObject {
         subscriptionLink = storedSubscription?.subscriptionLink ?? subscriptionLink
         subscriptionConfig = storedSubscription?.config
         pinState = await pinStateStore.current()
+        destinationAssignment = await destinationAssignmentStore.current()
         let storedSnapshot = await snapshotStore.current()
 
         let persistedSession = await tunnelSessionStore.current()

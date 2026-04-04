@@ -85,11 +85,16 @@ final class LiveE2ERunner: ObservableObject {
         case .tunnelRecovery:
             return nextTunnelRecoveryAction(for: state)
 
-        // MARK: - Destination-Aware Routing (Sprint 1 contract placeholders)
-        // These cases are added to the contract matrix but degrade to no-op
-        // until the runtime routing engine is implemented in later sprints.
-        case .autoModeApply, .manualModeAdvisory, .overrideOrPin, .staleOrRefresh, .failedReassignment:
-            return nil
+        case .autoModeApply:
+            return nextAutoModeApplyAction(for: state)
+        case .manualModeAdvisory:
+            return nextManualModeAdvisoryAction(for: state)
+        case .overrideOrPin:
+            return nextOverrideOrPinAction(for: state)
+        case .staleOrRefresh:
+            return nextStaleOrRefreshAction(for: state)
+        case .failedReassignment:
+            return nextFailedReassignmentAction(for: state)
         }
     }
 
@@ -236,6 +241,45 @@ final class LiveE2ERunner: ObservableObject {
         }
 
         return nil
+    }
+
+    private func nextAutoModeApplyAction(for state: State) -> Action? {
+        nextBenchmarkAction(for: state)
+    }
+
+    private func nextManualModeAdvisoryAction(for state: State) -> Action? {
+        if let action = nextBenchmarkAction(for: state), action != .selectTab(.home) {
+            return action
+        }
+
+        if state.hasBenchmarkResults && state.selectedTab != .expertConsole {
+            return unresolved(.selectTab(.expertConsole))
+        }
+
+        return nil
+    }
+
+    private func nextOverrideOrPinAction(for state: State) -> Action? {
+        if !hasExecuted(.pinCandidate("pending")) {
+            if let action = nextPinStableAction(for: state) {
+                return action
+            }
+            return nil
+        }
+
+        if state.pinnedCandidateID != nil && state.selectedTab != .home {
+            return unresolved(.selectTab(.home))
+        }
+
+        return nil
+    }
+
+    private func nextStaleOrRefreshAction(for state: State) -> Action? {
+        nextStaleHintAction(for: state)
+    }
+
+    private func nextFailedReassignmentAction(for state: State) -> Action? {
+        nextTunnelFailureAction(for: state)
     }
 
     private func unresolved(_ action: Action) -> Action? {
