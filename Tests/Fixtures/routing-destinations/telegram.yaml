@@ -1,0 +1,4 @@
+id: telegram
+label: Telegram
+rule_family: ios_rule_script/messaging
+fallback: false

@@ -1,0 +1,4 @@
+id: tiktok
+label: TikTok
+rule_family: ios_rule_script/social
+fallback: false

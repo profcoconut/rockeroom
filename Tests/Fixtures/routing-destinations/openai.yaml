@@ -1,0 +1,4 @@
+id: openai
+label: OpenAI
+rule_family: ios_rule_script/ai
+fallback: false

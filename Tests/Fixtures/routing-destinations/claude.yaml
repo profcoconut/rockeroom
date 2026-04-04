@@ -1,0 +1,4 @@
+id: claude
+label: Claude
+rule_family: ios_rule_script/ai
+fallback: false
