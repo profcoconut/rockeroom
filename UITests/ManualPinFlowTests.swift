@@ -40,6 +40,26 @@ final class ManualPinFlowTests: XCTestCase {
     }
 
     @MainActor
+    func testUnpinResumesPolicyControlledRecommendation() {
+        let app = configuredApp(storageSuite: "ui-manual-unpin-flow", resetStorage: true)
+        app.launch()
+
+        importAndOptimize(in: app)
+
+        app.buttons["openExpertConsoleButton"].tap()
+        XCTAssertTrue(app.buttons["Pin Stable Relay"].waitForExistence(timeout: 5))
+        app.buttons["Pin Stable Relay"].tap()
+        XCTAssertTrue(app.buttons["Unpin Stable Relay"].waitForExistence(timeout: 5))
+        app.buttons["Unpin Stable Relay"].tap()
+
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        XCTAssertFalse(app.staticTexts["Pinned provider active. Auto-switch is disabled."].exists)
+        XCTAssertTrue(app.staticTexts["Current setup: Fast Relay"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Recommended setup"].exists)
+    }
+
+    @MainActor
     private func configuredApp(storageSuite: String, resetStorage: Bool) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["ROCKEROOM_STORAGE_SUITE"] = storageSuite

@@ -146,6 +146,8 @@ Sprint 5: alpha hardening
 
 ### Phase 4
 - Sprint 5: alpha hardening and release readiness
+  - Current alpha gate is the serialized `RockeRoom` scheme test run with `-parallel-testing-enabled NO`
+  - Residual risk is host simulator service instability, not uncovered RockeRoom product assertions
 
 ## Implementation Units
 
