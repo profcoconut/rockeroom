@@ -39,7 +39,7 @@ final class ExpertConsoleViewModel: ObservableObject {
     }
 
     var currentSetupText: String {
-        snapshot?.bestCandidate?.label ?? "No measured setup yet"
+        currentCandidate?.label ?? "No measured setup yet"
     }
 
     var confidenceText: String {
@@ -62,15 +62,17 @@ final class ExpertConsoleViewModel: ObservableObject {
             let rendered: String
             if metric.unit == "ms" {
                 rendered = "\(Int(metric.value))\(metric.unit)"
+            } else if metric.unit == "%" {
+                rendered = String(format: "%.1f%@", metric.value, metric.unit)
             } else {
-                rendered = "\(Int(metric.value.rounded()))\(metric.unit)"
+                rendered = "\(Int(metric.value.rounded())) \(metric.unit)"
             }
-            return (metric.name.capitalized, rendered)
+            return (metric.name, rendered)
         }
     }
 
     var controlText: String {
-        pinState.candidateID == nil ? "Auto mode" : "Pinned"
+        pinState.candidateID == nil ? "Auto recommendation" : "Pinned"
     }
 
     var holdReasonText: String? {

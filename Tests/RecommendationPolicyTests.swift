@@ -17,7 +17,7 @@ final class RecommendationPolicyTests: XCTestCase {
         switch state {
         case .recommended(let summary):
             XCTAssertEqual(summary.selectedCandidateID, "best")
-            XCTAssertEqual(summary.proof.deltas.first?.metricName, "latency")
+            XCTAssertEqual(summary.proof.deltas.first?.metricName, "Latency")
         default:
             XCTFail("Expected recommendation")
         }
@@ -73,7 +73,7 @@ final class RecommendationPolicyTests: XCTestCase {
                 ProbeCandidateResult(
                     candidateID: "best",
                     label: "Best",
-                    metrics: [ProbeMetric(name: "latency", value: 50, unit: "ms", betterIsHigher: false)],
+                    metrics: [ProbeMetric(name: "Latency", value: 50, unit: "ms", betterIsHigher: false)],
                     score: bestScore,
                     confidence: confidence,
                     freshness: freshness
@@ -81,7 +81,7 @@ final class RecommendationPolicyTests: XCTestCase {
                 ProbeCandidateResult(
                     candidateID: "runnerUp",
                     label: "RunnerUp",
-                    metrics: [ProbeMetric(name: "latency", value: 120, unit: "ms", betterIsHigher: false)],
+                    metrics: [ProbeMetric(name: "Latency", value: 120, unit: "ms", betterIsHigher: false)],
                     score: runnerUpScore,
                     confidence: confidence,
                     freshness: freshness

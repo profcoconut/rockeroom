@@ -29,7 +29,7 @@ final class MarketplaceEvidenceProjectionTests: XCTestCase {
         guard let proof = currentCard.proof, let firstDelta = proof.deltas.first else {
             return XCTFail("Expected proof on current card")
         }
-        XCTAssertEqual(firstDelta.metricName, "latency")
+        XCTAssertEqual(firstDelta.metricName, "Latency")
         XCTAssertEqual(firstDelta.currentValue, 150, accuracy: 0.001)
         XCTAssertEqual(firstDelta.candidateValue, 120, accuracy: 0.001)
         XCTAssertEqual(projection.featuredProof, currentCard.proof)
@@ -67,7 +67,7 @@ final class MarketplaceEvidenceProjectionTests: XCTestCase {
 
         XCTAssertEqual(projection.primaryState, .empty)
         XCTAssertTrue(projection.cards.isEmpty)
-        XCTAssertEqual(projection.emptyMessage, "Run Optimize to collect marketplace evidence.")
+        XCTAssertEqual(projection.emptyMessage, "Run Benchmark to collect marketplace evidence.")
     }
 
     func testProjectionMarksStaleAndPartialSnapshots() {
@@ -159,7 +159,7 @@ final class MarketplaceEvidenceProjectionTests: XCTestCase {
                 ProbeCandidateResult(
                     candidateID: "fast",
                     label: "Fast Relay",
-                    metrics: [ProbeMetric(name: "latency", value: 120, unit: "ms", betterIsHigher: false)],
+                    metrics: [ProbeMetric(name: "Latency", value: 120, unit: "ms", betterIsHigher: false)],
                     score: 0.95,
                     confidence: 0.91,
                     freshness: freshness
@@ -167,7 +167,7 @@ final class MarketplaceEvidenceProjectionTests: XCTestCase {
                 ProbeCandidateResult(
                     candidateID: "stable",
                     label: "Stable Relay",
-                    metrics: [ProbeMetric(name: "latency", value: 150, unit: "ms", betterIsHigher: false)],
+                    metrics: [ProbeMetric(name: "Latency", value: 150, unit: "ms", betterIsHigher: false)],
                     score: 0.78,
                     confidence: 0.88,
                     freshness: freshness
