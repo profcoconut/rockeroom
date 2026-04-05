@@ -21,6 +21,20 @@ final class DestinationRoutingAssignmentTests: XCTestCase {
         }
     }
 
+    private var openAIDestination: RoutingDestination {
+        RoutingDestination(slug: "openai", label: "OpenAI", ruleFamily: "ai", isFallback: false)
+    }
+
+    private var testSubscription: SubscriptionConfig {
+        SubscriptionConfig(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            proxies: [
+                ClashProxy(id: "fast", name: "Fast Relay", type: "ss"),
+                ClashProxy(id: "stable", name: "Stable Relay", type: "vmess")
+            ]
+        )
+    }
+
     // MARK: - NetworkEnvironment
 
     func testNetworkEnvironmentDefaultsUnknownWhenDecodedValueIsMissingOrUnsupported() throws {
@@ -74,6 +88,83 @@ final class DestinationRoutingAssignmentTests: XCTestCase {
         XCTAssertEqual(context.destinationID, "openai")
         XCTAssertEqual(context.providerID, "hk-01")
         XCTAssertEqual(context.strategy, .rule)
+    }
+
+    // MARK: - DestinationFastPassRunner
+
+    func testMonitoringKeepsStatusAtMonitoringWhenCurrentProviderRemainsBest() async {
+        let runner = DestinationFastPassRunner()
+        var previousAssignments = DestinationRoutingAssignments(sourceURL: testSubscription.sourceURL.absoluteString)
+        previousAssignments.insert(
+            DestinationRoutingAssignment(
+                destinationID: "openai",
+                mode: .auto,
+                assignedProviderID: "fast",
+                assignedProviderLabel: "Fast Relay",
+                strategyName: "rule",
+                source: .automaticSelection,
+                assignedAt: 1000,
+                freshness: 0.95,
+                status: .monitoring,
+                measuredLatencyMS: 87,
+                failureRate: 0.4,
+                stabilityScore: 0.92,
+                recentChangeSummary: "Monitoring current route health."
+            )
+        )
+
+        let assignments = await runner.evaluate(
+            subscription: testSubscription,
+            sourceURL: testSubscription.sourceURL,
+            destinations: [openAIDestination],
+            previousAssignments: previousAssignments,
+            pinState: .none,
+            phase: .monitoring,
+            now: Date(timeIntervalSince1970: 1_000)
+        )
+
+        XCTAssertEqual(assignments["openai"]?.assignedProviderID, "fast")
+        XCTAssertEqual(assignments["openai"]?.status, .monitoring)
+        XCTAssertEqual(
+            assignments["openai"]?.recentChangeSummary,
+            "Monitoring OpenAI on Fast Relay with the strongest current route health."
+        )
+    }
+
+    func testMonitoringDoesNotReportHoldWhenPreviousProviderIsNoLongerAvailable() async {
+        let runner = DestinationFastPassRunner()
+        var previousAssignments = DestinationRoutingAssignments(sourceURL: testSubscription.sourceURL.absoluteString)
+        previousAssignments.insert(
+            DestinationRoutingAssignment(
+                destinationID: "openai",
+                mode: .auto,
+                assignedProviderID: "missing",
+                assignedProviderLabel: "Missing Relay",
+                strategyName: "rule",
+                source: .automaticSelection,
+                assignedAt: 1000,
+                freshness: 0.95,
+                status: .monitoring,
+                measuredLatencyMS: 88,
+                failureRate: 0.4,
+                stabilityScore: 0.92,
+                recentChangeSummary: "Monitoring current route health."
+            )
+        )
+
+        let assignments = await runner.evaluate(
+            subscription: testSubscription,
+            sourceURL: testSubscription.sourceURL,
+            destinations: [openAIDestination],
+            previousAssignments: previousAssignments,
+            pinState: .none,
+            phase: .monitoring,
+            now: Date(timeIntervalSince1970: 1_000)
+        )
+
+        XCTAssertEqual(assignments["openai"]?.assignedProviderID, "fast")
+        XCTAssertEqual(assignments["openai"]?.status, .switched)
+        XCTAssertNotEqual(assignments["openai"]?.status, .holding)
     }
 
     // MARK: - RoutingMode

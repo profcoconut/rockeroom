@@ -54,16 +54,18 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
             guard let best = ranked.first else { continue }
             let previous = previousAssignments?[destination.id]
             let runnerUp = ranked.dropFirst().first
+            let current = selectedHealth(for: previous, from: ranked)
 
             let pinnedMatch = pinState.candidateID == previous?.assignedProviderID
             let shouldHoldCurrent = shouldHoldCurrentAssignment(
                 previous: previous,
+                current: current,
                 best: best,
                 runnerUp: runnerUp,
                 pinnedMatch: pinnedMatch
             )
 
-            let selected = shouldHoldCurrent ? selectedHealth(for: previous, from: ranked) ?? best : best
+            let selected = shouldHoldCurrent ? current ?? best : best
             let source: AssignmentSource
             let status: DestinationAssignmentStatus
             let summary: String
@@ -72,6 +74,10 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
                 source = .manualOverride
                 status = .pinned
                 summary = "Pinned route remains active for \(destination.label)."
+            } else if let previous, previous.assignedProviderID == selected.proxy.id {
+                source = previous.source
+                status = .monitoring
+                summary = "Monitoring \(destination.label) on \(selected.proxy.name) with the strongest current route health."
             } else if let previous, previous.assignedProviderID != selected.proxy.id {
                 source = .automaticSelection
                 status = .switched
@@ -118,6 +124,7 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
 
     private func shouldHoldCurrentAssignment(
         previous: DestinationRoutingAssignment?,
+        current: DestinationProxyHealth?,
         best: DestinationProxyHealth,
         runnerUp: DestinationProxyHealth?,
         pinnedMatch: Bool
@@ -125,8 +132,9 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
         guard let previous else { return false }
         if pinnedMatch { return true }
         if best.proxy.id == previous.assignedProviderID { return false }
+        guard let current else { return false }
 
-        let currentLatency = previous.measuredLatencyMS ?? (runnerUp?.latencyMS ?? best.latencyMS)
+        let currentLatency = previous.measuredLatencyMS ?? current.latencyMS
         let latencyGain = currentLatency - best.latencyMS
         let stability = best.stability
 
