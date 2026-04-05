@@ -35,6 +35,7 @@
 		52D1386E778C34FB58EA1E6E /* google-ai.yaml in Resources */ = {isa = PBXBuildFile; fileRef = DFFE36E30071EA9027DD6411 /* google-ai.yaml */; };
 		54925A756BF0DAA690B791A7 /* SubscriptionRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D78323FC701D025F05D552E9 /* SubscriptionRepositoryTests.swift */; };
 		54B22D3154AEA42C8FFEE9C7 /* TunnelSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 135A632327AD2E1158908887 /* TunnelSession.swift */; };
+		553E38B42A704C0F8D1D84D8 /* RouteContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80F1D28DD6F84C92AD95EC42 /* RouteContext.swift */; };
 		564D5D6D387EF74C2532C658 /* telegram.yaml in Resources */ = {isa = PBXBuildFile; fileRef = B18909AC589692DFD4F4C362 /* telegram.yaml */; };
 		58B088F90E45502A83E11DDD /* StoredSubscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC59015A96D38CF75FD801CC /* StoredSubscription.swift */; };
 		5CFE041BD65FC3B494609BF8 /* ClashAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49FF0CE45858C2825EB7ABBA /* ClashAdapterTests.swift */; };
@@ -63,8 +64,11 @@
 		9DD00110B4CE1A4087AE34A2 /* PinStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FB62332891D5896C12FEFB6 /* PinStateStore.swift */; };
 		9F8A09C3510B33FA4428B612 /* DestinationCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA120A41BCA3EF2A336D450 /* DestinationCatalogTests.swift */; };
 		9F9D243AAB5D11289D42AEC5 /* FreshnessRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA13A6CE145C1A946CACA95 /* FreshnessRegressionTests.swift */; };
+		AE2BA3D9B32A4FF9AF7F1A11 /* NetworkEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C94FE8D0E76D4C74B4E9578E /* NetworkEnvironment.swift */; };
+		AE8D772B082740BFBBC0F0D2 /* RoutingStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CC990DFA42243E5B1E55DFD /* RoutingStrategy.swift */; };
 		A098397281A9E855B8966AD2 /* ClashSubscriptionImporterLiveFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AF313F7465C5BC55BB73A76 /* ClashSubscriptionImporterLiveFormatTests.swift */; };
 		A211276A2F41BE716520F1BA /* final.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 4DB13B40140CEED8FBF9878A /* final.yaml */; };
+		A2FAEEA1FF26194C80186F26 /* DestinationFastPassRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 366C9502E934C9F4F89DAF29 /* DestinationFastPassRunner.swift */; };
 		A66FFA2C3988770DF05A5D7B /* openai.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 055D95C3674025F74DB2418D /* openai.yaml */; };
 		A732EE803770944EA470483E /* LiveE2EScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DA482412115DA9A67401664 /* LiveE2EScenario.swift */; };
 		A89160F9580F9DA78F6E990B /* RecommendationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2654D901D315BC6ECC02AE3D /* RecommendationPolicy.swift */; };
@@ -188,6 +192,7 @@
 		2DA482412115DA9A67401664 /* LiveE2EScenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveE2EScenario.swift; sourceTree = "<group>"; };
 		2DFE8FEDDFEA7ECC19D3CF53 /* live-vless-subscription.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "live-vless-subscription.txt"; sourceTree = "<group>"; };
 		31060422180F3E2DF3824EBB /* SharedKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SharedKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		366C9502E934C9F4F89DAF29 /* DestinationFastPassRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationFastPassRunner.swift; sourceTree = "<group>"; };
 		3D0CBBEFB1D9C5BBF8C9C856 /* netflix.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = netflix.yaml; sourceTree = "<group>"; };
 		43A8BCA04DA1F463BFC1D1CB /* RockeRoomUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RockeRoomUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		46BCFDCAEDDF7743AB1DC5A3 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -212,6 +217,7 @@
 		776B58D2CF932D0E585DA33C /* AutoModeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoModeViewModel.swift; sourceTree = "<group>"; };
 		785094D14AB47B25D4E22875 /* RefreshCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshCoordinator.swift; sourceTree = "<group>"; };
 		79C047358E6E421D5D041433 /* DestinationRoutingAssignmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationRoutingAssignmentTests.swift; sourceTree = "<group>"; };
+		80F1D28DD6F84C92AD95EC42 /* RouteContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteContext.swift; sourceTree = "<group>"; };
 		7B59AF895234EB05AD9749F6 /* ClashSubscriptionImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClashSubscriptionImporter.swift; sourceTree = "<group>"; };
 		7E7C015FFA41E63D8782F7C1 /* RoutingDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutingDestination.swift; sourceTree = "<group>"; };
 		7EEACA835C72D966EC7BDE35 /* EvidenceProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvidenceProjection.swift; sourceTree = "<group>"; };
@@ -224,6 +230,7 @@
 		98D0C3D1A4A463BAD5D891F0 /* TunnelSessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelSessionStoreTests.swift; sourceTree = "<group>"; };
 		9AF313F7465C5BC55BB73A76 /* ClashSubscriptionImporterLiveFormatTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClashSubscriptionImporterLiveFormatTests.swift; sourceTree = "<group>"; };
 		9DAE4494AA77F6C83BD25632 /* ClashSubscriptionImporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClashSubscriptionImporterTests.swift; sourceTree = "<group>"; };
+		C94FE8D0E76D4C74B4E9578E /* NetworkEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkEnvironment.swift; sourceTree = "<group>"; };
 		A57BA70511A6137665D60F9E /* ExpertConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpertConsoleView.swift; sourceTree = "<group>"; };
 		A83292C5C6FC0561C285EE2B /* AutoModeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoModeViewModelTests.swift; sourceTree = "<group>"; };
 		A83FBBFF1040B82E0FF73F73 /* MarketplaceEvidenceProjectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceEvidenceProjectionTests.swift; sourceTree = "<group>"; };
@@ -239,6 +246,7 @@
 		CC59015A96D38CF75FD801CC /* StoredSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredSubscription.swift; sourceTree = "<group>"; };
 		CCA13A6CE145C1A946CACA95 /* FreshnessRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreshnessRegressionTests.swift; sourceTree = "<group>"; };
 		CCAFF29566414EF2222E19CA /* ExpertConsoleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpertConsoleViewModel.swift; sourceTree = "<group>"; };
+		2CC990DFA42243E5B1E55DFD /* RoutingStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutingStrategy.swift; sourceTree = "<group>"; };
 		CD659950327ACA08653DEC95 /* tiktok.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = tiktok.yaml; sourceTree = "<group>"; };
 		CDDECA764E03696705C4793D /* youtube.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = youtube.yaml; sourceTree = "<group>"; };
 		D78323FC701D025F05D552E9 /* SubscriptionRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionRepositoryTests.swift; sourceTree = "<group>"; };
@@ -408,9 +416,12 @@
 		7893580D67B8E239207711EE /* Domain */ = {
 			isa = PBXGroup;
 			children = (
+				C94FE8D0E76D4C74B4E9578E /* NetworkEnvironment.swift */,
 				6569B0F0FB009144D4891FFB /* ProofPayload.swift */,
 				5C38DD9DA6C9DD38F6B7C786 /* RecommendationState.swift */,
+				80F1D28DD6F84C92AD95EC42 /* RouteContext.swift */,
 				7E7C015FFA41E63D8782F7C1 /* RoutingDestination.swift */,
+				2CC990DFA42243E5B1E55DFD /* RoutingStrategy.swift */,
 				CC59015A96D38CF75FD801CC /* StoredSubscription.swift */,
 				58A4E0D8086E5B621211E677 /* SubscriptionConfig.swift */,
 				75D3C9B67641CA6720A30C74 /* SubscriptionImportResult.swift */,
@@ -468,6 +479,7 @@
 			children = (
 				4D992CDEFE74E7A28AA49BD2 /* ClashAdapter.swift */,
 				7B59AF895234EB05AD9749F6 /* ClashSubscriptionImporter.swift */,
+				366C9502E934C9F4F89DAF29 /* DestinationFastPassRunner.swift */,
 				E3D2BA65559B3BC2C2301B8E /* DestinationRoutingAssignmentStore.swift */,
 				7EEACA835C72D966EC7BDE35 /* EvidenceProjection.swift */,
 				88C6AC810D287330C74F196E /* PersistentDataStore.swift */,
@@ -771,8 +783,10 @@
 			files = (
 				6F5CF1267865F64512BD80D8 /* ClashAdapter.swift in Sources */,
 				90B806D00024620610D11DF1 /* ClashSubscriptionImporter.swift in Sources */,
+				A2FAEEA1FF26194C80186F26 /* DestinationFastPassRunner.swift in Sources */,
 				C823476E0BEAA4FEE3731ECA /* DestinationRoutingAssignmentStore.swift in Sources */,
 				148E942E3ACB10A3F799ECD5 /* EvidenceProjection.swift in Sources */,
+				AE2BA3D9B32A4FF9AF7F1A11 /* NetworkEnvironment.swift in Sources */,
 				CC4328B7CCB5A5DC274847A2 /* PersistentDataStore.swift in Sources */,
 				9DD00110B4CE1A4087AE34A2 /* PinStateStore.swift in Sources */,
 				0AC6DEE425065D6ED83ABE1C /* ProbeRunner.swift in Sources */,
@@ -782,7 +796,9 @@
 				E7CC90774C131C29E8B31488 /* RefreshCoordinator.swift in Sources */,
 				487BCAAAE54D66E5B80FF23B /* ResultSnapshot.swift in Sources */,
 				B8117BBEAD0802E3C44F53B0 /* ResultSnapshotStore.swift in Sources */,
+				553E38B42A704C0F8D1D84D8 /* RouteContext.swift in Sources */,
 				6BD129181A942B4BDFBF1E6E /* RoutingDestination.swift in Sources */,
+				AE8D772B082740BFBBC0F0D2 /* RoutingStrategy.swift in Sources */,
 				58B088F90E45502A83E11DDD /* StoredSubscription.swift in Sources */,
 				9B6DE62DA06D0F9A0F6993C8 /* SubscriptionConfig.swift in Sources */,
 				DA16669BF906F82E74156A2F /* SubscriptionImportResult.swift in Sources */,

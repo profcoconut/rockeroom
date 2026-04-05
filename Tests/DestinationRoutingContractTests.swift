@@ -6,6 +6,26 @@ import XCTest
 /// must preserve. These tests intentionally assert through production seams rather than
 /// test-local routing models.
 final class DestinationRoutingContractTests: XCTestCase {
+    func testDestinationRoutingAssignmentCarriesRouteContextAsOneProductionTuple() {
+        let assignment = DestinationRoutingAssignment(
+            routeContext: RouteContext(
+                environment: .wifiHome,
+                destinationID: "openai",
+                providerID: "fast",
+                strategy: .rule
+            ),
+            mode: .auto,
+            assignedProviderLabel: "Fast Relay",
+            source: .automaticSelection,
+            assignedAt: 1000
+        )
+
+        XCTAssertEqual(assignment.routeContext.environment, .wifiHome)
+        XCTAssertEqual(assignment.destinationID, "openai")
+        XCTAssertEqual(assignment.assignedProviderID, "fast")
+        XCTAssertEqual(assignment.strategyName, "rule")
+    }
+
     func testRecommendedRouteCarriesCurrentProviderTruthAndProof() {
         let snapshot = makeSnapshot(
             freshness: 0.95,

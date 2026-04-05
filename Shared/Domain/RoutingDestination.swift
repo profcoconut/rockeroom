@@ -21,6 +21,19 @@ public struct RoutingDestination: Equatable, Sendable, Codable, Identifiable {
         self.ruleFamily = ruleFamily
         self.isFallback = isFallback
     }
+
+    public static let v1Catalog: [RoutingDestination] = [
+        RoutingDestination(slug: "openai", label: "OpenAI", ruleFamily: "ai", isFallback: false),
+        RoutingDestination(slug: "claude", label: "Claude", ruleFamily: "ai", isFallback: false),
+        RoutingDestination(slug: "google-ai", label: "Google AI", ruleFamily: "ai", isFallback: false),
+        RoutingDestination(slug: "netflix", label: "Netflix", ruleFamily: "streaming", isFallback: false),
+        RoutingDestination(slug: "disney", label: "Disney+", ruleFamily: "streaming", isFallback: false),
+        RoutingDestination(slug: "tiktok", label: "TikTok", ruleFamily: "social", isFallback: false),
+        RoutingDestination(slug: "youtube", label: "YouTube", ruleFamily: "video", isFallback: false),
+        RoutingDestination(slug: "telegram", label: "Telegram", ruleFamily: "messaging", isFallback: false),
+        RoutingDestination(slug: "apple", label: "Apple", ruleFamily: "system", isFallback: false),
+        RoutingDestination(slug: "final", label: "Final", ruleFamily: "direct", isFallback: true)
+    ]
 }
 
 // MARK: - Routing Mode
@@ -47,6 +60,14 @@ public enum AssignmentSource: String, Codable, Equatable, Sendable {
     case initialDefault
 }
 
+public enum DestinationAssignmentStatus: String, Codable, Equatable, Sendable {
+    case monitoring
+    case switched
+    case holding
+    case pinned
+    case degraded
+}
+
 // MARK: - Destination Routing Assignment
 
 /// A durable record of the current routing assignment for one destination.
@@ -58,14 +79,9 @@ public enum AssignmentSource: String, Codable, Equatable, Sendable {
 /// Measurement evidence (metrics, confidence, freshness) lives in `ResultSnapshot`,
 /// not here. This struct carries only assignment identity, mode, and provenance.
 public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
-    public let destinationID: String
+    public let routeContext: RouteContext
     public let mode: RoutingMode
-    public let assignedProviderID: String
     public let assignedProviderLabel: String
-
-    /// The routing strategy name (e.g., "rule", "direct", "proxy").
-    /// The exact set of valid strategy names is determined by the Clash configuration.
-    public let strategyName: String
 
     /// How this assignment was determined.
     public let source: AssignmentSource
@@ -82,6 +98,49 @@ public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
     /// If `evidenceLinkSnapshotID` is set, this field preserves the freshness
     /// context even if the linked snapshot has since been superseded.
     public let freshness: Double?
+    public let status: DestinationAssignmentStatus?
+    public let measuredLatencyMS: Double?
+    public let failureRate: Double?
+    public let stabilityScore: Double?
+    public let recentChangeSummary: String?
+    public let alternativeProviderID: String?
+    public let alternativeProviderLabel: String?
+
+    public var destinationID: String { routeContext.destinationID }
+    public var assignedProviderID: String { routeContext.providerID }
+    public var strategyName: String { routeContext.strategy.persistedLabel }
+
+    public init(
+        routeContext: RouteContext,
+        mode: RoutingMode,
+        assignedProviderLabel: String,
+        source: AssignmentSource,
+        assignedAt: TimeInterval,
+        evidenceLinkSnapshotID: String? = nil,
+        freshness: Double? = nil,
+        status: DestinationAssignmentStatus? = nil,
+        measuredLatencyMS: Double? = nil,
+        failureRate: Double? = nil,
+        stabilityScore: Double? = nil,
+        recentChangeSummary: String? = nil,
+        alternativeProviderID: String? = nil,
+        alternativeProviderLabel: String? = nil
+    ) {
+        self.routeContext = routeContext
+        self.mode = mode
+        self.assignedProviderLabel = assignedProviderLabel
+        self.source = source
+        self.assignedAt = assignedAt
+        self.evidenceLinkSnapshotID = evidenceLinkSnapshotID
+        self.freshness = freshness
+        self.status = status
+        self.measuredLatencyMS = measuredLatencyMS
+        self.failureRate = failureRate
+        self.stabilityScore = stabilityScore
+        self.recentChangeSummary = recentChangeSummary
+        self.alternativeProviderID = alternativeProviderID
+        self.alternativeProviderLabel = alternativeProviderLabel
+    }
 
     public init(
         destinationID: String,
@@ -89,20 +148,110 @@ public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
         assignedProviderID: String,
         assignedProviderLabel: String,
         strategyName: String,
+        environment: NetworkEnvironment = .unknown,
         source: AssignmentSource,
         assignedAt: TimeInterval,
         evidenceLinkSnapshotID: String? = nil,
-        freshness: Double? = nil
+        freshness: Double? = nil,
+        status: DestinationAssignmentStatus? = nil,
+        measuredLatencyMS: Double? = nil,
+        failureRate: Double? = nil,
+        stabilityScore: Double? = nil,
+        recentChangeSummary: String? = nil,
+        alternativeProviderID: String? = nil,
+        alternativeProviderLabel: String? = nil
     ) {
-        self.destinationID = destinationID
-        self.mode = mode
-        self.assignedProviderID = assignedProviderID
-        self.assignedProviderLabel = assignedProviderLabel
-        self.strategyName = strategyName
-        self.source = source
-        self.assignedAt = assignedAt
-        self.evidenceLinkSnapshotID = evidenceLinkSnapshotID
-        self.freshness = freshness
+        self.init(
+            routeContext: RouteContext(
+                environment: environment,
+                destinationID: destinationID,
+                providerID: assignedProviderID,
+                strategy: RoutingStrategy(legacyName: strategyName)
+            ),
+            mode: mode,
+            assignedProviderLabel: assignedProviderLabel,
+            source: source,
+            assignedAt: assignedAt,
+            evidenceLinkSnapshotID: evidenceLinkSnapshotID,
+            freshness: freshness,
+            status: status,
+            measuredLatencyMS: measuredLatencyMS,
+            failureRate: failureRate,
+            stabilityScore: stabilityScore,
+            recentChangeSummary: recentChangeSummary,
+            alternativeProviderID: alternativeProviderID,
+            alternativeProviderLabel: alternativeProviderLabel
+        )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case routeContext
+        case mode
+        case assignedProviderLabel
+        case source
+        case assignedAt
+        case evidenceLinkSnapshotID
+        case freshness
+        case status
+        case measuredLatencyMS
+        case failureRate
+        case stabilityScore
+        case recentChangeSummary
+        case alternativeProviderID
+        case alternativeProviderLabel
+
+        // Legacy flat payload keys.
+        case destinationID
+        case assignedProviderID
+        case strategyName
+        case environment
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let routeContext = try container.decodeIfPresent(RouteContext.self, forKey: .routeContext) {
+            self.routeContext = routeContext
+        } else {
+            self.routeContext = RouteContext(
+                environment: try container.decodeIfPresent(NetworkEnvironment.self, forKey: .environment) ?? .unknown,
+                destinationID: try container.decode(String.self, forKey: .destinationID),
+                providerID: try container.decode(String.self, forKey: .assignedProviderID),
+                strategy: RoutingStrategy(
+                    legacyName: try container.decode(String.self, forKey: .strategyName)
+                )
+            )
+        }
+        mode = try container.decode(RoutingMode.self, forKey: .mode)
+        assignedProviderLabel = try container.decode(String.self, forKey: .assignedProviderLabel)
+        source = try container.decode(AssignmentSource.self, forKey: .source)
+        assignedAt = try container.decode(TimeInterval.self, forKey: .assignedAt)
+        evidenceLinkSnapshotID = try container.decodeIfPresent(String.self, forKey: .evidenceLinkSnapshotID)
+        freshness = try container.decodeIfPresent(Double.self, forKey: .freshness)
+        status = try container.decodeIfPresent(DestinationAssignmentStatus.self, forKey: .status)
+        measuredLatencyMS = try container.decodeIfPresent(Double.self, forKey: .measuredLatencyMS)
+        failureRate = try container.decodeIfPresent(Double.self, forKey: .failureRate)
+        stabilityScore = try container.decodeIfPresent(Double.self, forKey: .stabilityScore)
+        recentChangeSummary = try container.decodeIfPresent(String.self, forKey: .recentChangeSummary)
+        alternativeProviderID = try container.decodeIfPresent(String.self, forKey: .alternativeProviderID)
+        alternativeProviderLabel = try container.decodeIfPresent(String.self, forKey: .alternativeProviderLabel)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(routeContext, forKey: .routeContext)
+        try container.encode(mode, forKey: .mode)
+        try container.encode(assignedProviderLabel, forKey: .assignedProviderLabel)
+        try container.encode(source, forKey: .source)
+        try container.encode(assignedAt, forKey: .assignedAt)
+        try container.encodeIfPresent(evidenceLinkSnapshotID, forKey: .evidenceLinkSnapshotID)
+        try container.encodeIfPresent(freshness, forKey: .freshness)
+        try container.encodeIfPresent(status, forKey: .status)
+        try container.encodeIfPresent(measuredLatencyMS, forKey: .measuredLatencyMS)
+        try container.encodeIfPresent(failureRate, forKey: .failureRate)
+        try container.encodeIfPresent(stabilityScore, forKey: .stabilityScore)
+        try container.encodeIfPresent(recentChangeSummary, forKey: .recentChangeSummary)
+        try container.encodeIfPresent(alternativeProviderID, forKey: .alternativeProviderID)
+        try container.encodeIfPresent(alternativeProviderLabel, forKey: .alternativeProviderLabel)
     }
 }
 
