@@ -1,4 +1,5 @@
 import SwiftUI
+import SharedKit
 
 @main
 struct RockeRoomApp: App {
@@ -48,7 +49,23 @@ struct RockeRoomApp: App {
 private enum AppEnvironment {
     @MainActor
     static func makeAutoModeViewModel() -> AutoModeViewModel {
-        AutoModeViewModel(now: resolvedNow)
+        let dataStore = UserDefaultsDataStore()
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let subscriptionRepository = SubscriptionRepository(store: dataStore)
+        let tunnelSessionStore = TunnelSessionStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+        let destinationAssignmentStore = DestinationRoutingAssignmentStore(store: dataStore)
+
+        return AutoModeViewModel(
+            runtimeProfile: makeStandardRuntimeProfile(tunnelSessionStore: tunnelSessionStore),
+            manualDebugRuntimeProfile: makeManualDebugRuntimeProfile(tunnelSessionStore: tunnelSessionStore),
+            snapshotStore: snapshotStore,
+            subscriptionRepository: subscriptionRepository,
+            tunnelSessionStore: tunnelSessionStore,
+            pinStateStore: pinStateStore,
+            destinationAssignmentStore: destinationAssignmentStore,
+            now: resolvedNow
+        )
     }
 
     private static var resolvedNow: @Sendable () -> Date {
@@ -61,6 +78,65 @@ private enum AppEnvironment {
         }
 
         return { Date(timeIntervalSince1970: seconds) }
+    }
+
+    private static func makeStandardRuntimeProfile(
+        tunnelSessionStore: TunnelSessionStore
+    ) -> AutoModeRuntimeProfile {
+        let environment = ProcessInfo.processInfo.environment
+        let mode: AutoModeRuntimeMode = environment["ROCKEROOM_LIVE_E2E_SCENARIO"] == nil &&
+            environment["ROCKEROOM_USE_DEMO_TUNNEL"] != "1" &&
+            environment["ROCKEROOM_USE_DEMO_FETCHER"] != "1"
+            ? .standard
+            : .launchDrivenE2E
+
+        let importer: ClashSubscriptionImporter
+        if environment["ROCKEROOM_USE_DEMO_FETCHER"] == "1" {
+            importer = ClashSubscriptionImporter(fetcher: LocalDevelopmentSubscriptionFetcher())
+        } else {
+            importer = ClashSubscriptionImporter()
+        }
+
+        let adapter: ClashAdapter
+        if environment["ROCKEROOM_USE_DEMO_TUNNEL"] == "1" {
+            let manager: any TunnelManaging
+            if environment["ROCKEROOM_DEMO_TUNNEL_FAILURE"] == "1" {
+                manager = FailingTunnelManager()
+            } else {
+                manager = InMemoryTunnelManager()
+            }
+            adapter = ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: manager,
+                    sessionStore: tunnelSessionStore
+                )
+            )
+        } else {
+            adapter = ClashAdapter(sessionStore: tunnelSessionStore)
+        }
+
+        return AutoModeRuntimeProfile(
+            mode: mode,
+            importer: importer,
+            adapter: adapter,
+            runner: ProbeRunner(executor: DemoProbeExecutor())
+        )
+    }
+
+    private static func makeManualDebugRuntimeProfile(
+        tunnelSessionStore: TunnelSessionStore
+    ) -> AutoModeRuntimeProfile {
+        AutoModeRuntimeProfile(
+            mode: .manualDebug,
+            importer: ClashSubscriptionImporter(),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: InMemoryTunnelManager(),
+                    sessionStore: tunnelSessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: DemoProbeExecutor())
+        )
     }
 }
 

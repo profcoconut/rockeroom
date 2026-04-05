@@ -8,6 +8,7 @@ final class LiveE2ERunner: ObservableObject {
             let title: String
         }
 
+        let hasRestoredSession: Bool
         let hasImportedSubscription: Bool
         let importErrorMessage: String?
         let isImporting: Bool
@@ -61,6 +62,7 @@ final class LiveE2ERunner: ObservableObject {
     }
 
     func nextAction(for state: State) -> Action? {
+        guard state.hasRestoredSession else { return nil }
         guard let scenario else { return nil }
 
         switch scenario.kind {

@@ -82,6 +82,17 @@ struct TestFailingFetcher: SubscriptionContentFetching {
     }
 }
 
+struct TestMappingFetcher: SubscriptionContentFetching {
+    let payloads: [String: Data]
+
+    func fetch(from url: URL) async throws -> Data {
+        guard let data = payloads[url.absoluteString] else {
+            throw URLError(.badServerResponse)
+        }
+        return data
+    }
+}
+
 struct TestStubProbeExecutor: ProbeExecuting {
     func probe(_ candidate: ClashProxy) async -> ProbeCandidateResult {
         ProbeCandidateResult(
