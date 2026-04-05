@@ -39,4 +39,6 @@ Use the integrated `RockeRoom` scheme as the alpha gate. The stable command is:
 xcodebuild -project RockeRoom.xcodeproj -scheme RockeRoom -destination 'platform=iOS Simulator,name=iPhone 17' test -parallel-testing-enabled NO
 ```
 
+For manual simulator testing, the debug overlay starts a simulator-safe debug session: it resets app state, imports a built-in deterministic demo subscription, or imports a typed live URL. Import, `Home`, `Run Benchmark`, and `Expert Console` remain the normal product flow, while true tunnel IPC validation stays a separate runtime path.
+
 For TestFlight and evaluator handoff steps, see `docs/release/alpha-testflight-checklist.md`.

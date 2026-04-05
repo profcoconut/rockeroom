@@ -198,12 +198,36 @@ final class LiveE2EScenarioTests: XCTestCase {
         )
     }
 
+    func testRunnerWaitsForRestoreBeforeReplayingScenarioActions() {
+        let runner = LiveE2ERunner(
+            scenario: LiveE2EScenario(kind: .staleHint, subscriptionLink: "https://example.com/live")
+        )
+
+        XCTAssertNil(
+            runner.nextAction(
+                for: LiveE2ERunner.State(
+                    hasRestoredSession: false,
+                    hasImportedSubscription: false,
+                    importErrorMessage: nil,
+                    isImporting: false,
+                    hasBenchmarkResults: false,
+                    isBenchmarkInFlight: false,
+                    selectedTab: .home,
+                    refreshHintText: nil,
+                    pinnedCandidateID: nil,
+                    rankedCandidates: []
+                )
+            )
+        )
+    }
+
     func testPinUnpinScenarioDoesNotReplayPinAfterUnpin() {
         let runner = LiveE2ERunner(
             scenario: LiveE2EScenario(kind: .pinUnpinHome, subscriptionLink: "https://example.com/live")
         )
 
         let readyForPin = LiveE2ERunner.State(
+            hasRestoredSession: true,
             hasImportedSubscription: true,
             importErrorMessage: nil,
             isImporting: false,
@@ -230,6 +254,7 @@ final class LiveE2EScenarioTests: XCTestCase {
         runner.advance(state: readyForPin, actions: record)
 
         let pinned = LiveE2ERunner.State(
+            hasRestoredSession: true,
             hasImportedSubscription: true,
             importErrorMessage: nil,
             isImporting: false,
@@ -243,6 +268,7 @@ final class LiveE2EScenarioTests: XCTestCase {
         runner.advance(state: pinned, actions: record)
 
         let unpinned = LiveE2ERunner.State(
+            hasRestoredSession: true,
             hasImportedSubscription: true,
             importErrorMessage: nil,
             isImporting: false,
@@ -272,6 +298,7 @@ final class LiveE2EScenarioTests: XCTestCase {
         pinnedCandidateID: String? = nil
     ) -> LiveE2ERunner.State {
         LiveE2ERunner.State(
+            hasRestoredSession: true,
             hasImportedSubscription: hasImportedSubscription,
             importErrorMessage: nil,
             isImporting: false,

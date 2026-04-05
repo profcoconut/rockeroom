@@ -2,6 +2,15 @@
 
 RockeRoom now supports a launch-driven live E2E workflow so simulator validation can replay most of the manual checklist even when the current XcodeBuildMCP surface does not expose `tap` or `type_text`.
 
+For manual simulator use, the debug overlay is now intentionally narrower than the launch-driven harness:
+
+- it can reset app state
+- it can start a simulator-safe manual debug runtime session
+- it can import a built-in deterministic demo subscription
+- it can import a typed live URL through the normal import path
+
+It does **not** seed benchmarked, pinned, stale, or tunnel-failure end states anymore. After a debug import succeeds, `Run Benchmark` and everything after it remain the normal product flow.
+
 ## What This Covers
 
 - importing a subscription from a live URL or deterministic fixture
@@ -101,6 +110,24 @@ Notes:
 - omit `ROCKEROOM_USE_DEMO_FETCHER` so the app performs the real fetch
 - keep `ROCKEROOM_USE_DEMO_TUNNEL=1` unless you are explicitly validating the system tunnel path
 - this validates real provider compatibility while keeping simulator execution deterministic enough to inspect
+
+## Manual Debug Overlay Mode
+
+Use this when you are driving the simulator by hand and want one-tap import without relying on paste.
+
+What it does:
+
+- `Reset app` clears imported subscription, benchmark snapshot, tunnel session, pin state, and destination assignments
+- `Import demo subscription` imports a built-in deterministic subscription, starts a simulator-safe manual debug runtime session, and lands on normal `Home`
+- `Import typed URL` takes the URL you enter in the overlay, starts a simulator-safe manual debug runtime session, and runs the same import path the setup screen uses
+
+What it does not do:
+
+- it does not auto-benchmark
+- it does not validate real packet tunnel IPC
+- it does not seed stale, pinned, or failure states
+
+That means the manual debug path is intended to keep the visible product flow honest while avoiding simulator-only IPC failures. If you need true packet tunnel validation, use the explicit launch-driven/runtime path instead of the manual debug overlay.
 
 ## XcodeBuildMCP Workflow
 

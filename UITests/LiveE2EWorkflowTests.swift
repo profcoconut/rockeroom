@@ -2,6 +2,104 @@ import XCTest
 
 final class LiveE2EWorkflowTests: XCTestCase {
     @MainActor
+    func testDebugOverlayRemainsVisibleWhenOpenedAndLeftIdle() throws {
+        let app = configuredManualDebugApp(storageSuite: "ui-debug-overlay-open-idle", resetStorage: true)
+
+        app.launch()
+
+        XCTAssertTrue(app.buttons["debugOverlayButton"].waitForExistence(timeout: 8))
+        app.buttons["debugOverlayButton"].tap()
+
+        XCTAssertTrue(app.buttons["Import demo subscription"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.textFields["debugLiveImportLinkField"].exists)
+
+        sleep(2)
+
+        XCTAssertTrue(app.textFields["debugLiveImportLinkField"].exists)
+        XCTAssertTrue(app.buttons["Import demo subscription"].exists)
+    }
+
+    @MainActor
+    func testDebugOverlayRemainsVisibleWhileEditingLiveURL() throws {
+        let app = configuredManualDebugApp(storageSuite: "ui-debug-overlay-edit-live-url", resetStorage: true)
+
+        app.launch()
+
+        XCTAssertTrue(app.buttons["debugOverlayButton"].waitForExistence(timeout: 8))
+        app.buttons["debugOverlayButton"].tap()
+
+        let field = app.textFields["debugLiveImportLinkField"]
+        XCTAssertTrue(field.waitForExistence(timeout: 8))
+        field.tap()
+        field.typeText("https://provider.example.com/subscription")
+
+        XCTAssertTrue(app.textFields["debugLiveImportLinkField"].exists)
+        XCTAssertTrue(app.buttons["debugImportTypedURLButton"].exists)
+    }
+
+    @MainActor
+    func testDebugOverlayDeterministicImportLandsOnNormalHomeFlow() throws {
+        let app = configuredManualDebugApp(storageSuite: "ui-debug-overlay-demo-import", resetStorage: true)
+
+        app.launch()
+
+        XCTAssertTrue(app.buttons["debugOverlayButton"].waitForExistence(timeout: 8))
+        app.buttons["debugOverlayButton"].tap()
+        XCTAssertTrue(app.buttons["Import demo subscription"].waitForExistence(timeout: 8))
+        app.buttons["Import demo subscription"].tap()
+
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["benchmarkButton"].waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 8)
+        )
+        XCTAssertFalse(app.staticTexts["Ranked candidates"].exists)
+    }
+
+    @MainActor
+    func testDebugOverlayDeterministicImportRunsBenchmarkAndOpensExpertConsole() throws {
+        let app = configuredManualDebugApp(storageSuite: "ui-debug-overlay-demo-benchmark", resetStorage: true)
+
+        app.launch()
+
+        XCTAssertTrue(app.buttons["debugOverlayButton"].waitForExistence(timeout: 8))
+        app.buttons["debugOverlayButton"].tap()
+        XCTAssertTrue(app.buttons["Import demo subscription"].waitForExistence(timeout: 8))
+        app.buttons["Import demo subscription"].tap()
+
+        let benchmarkButton = app.buttons["benchmarkButton"]
+        XCTAssertTrue(benchmarkButton.waitForExistence(timeout: 8))
+        benchmarkButton.tap()
+
+        XCTAssertTrue(app.staticTexts["Measured recommendation"].waitForExistence(timeout: 8))
+
+        app.tabBars.buttons["Expert Console"].tap()
+        XCTAssertTrue(app.navigationBars["Expert Console"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Ranked candidates"].waitForExistence(timeout: 8))
+    }
+
+    @MainActor
+    func testDebugOverlayResetReturnsImportedSessionToSetupScreen() throws {
+        let app = configuredManualDebugApp(storageSuite: "ui-debug-overlay-reset", resetStorage: true)
+
+        app.launch()
+
+        XCTAssertTrue(app.buttons["debugOverlayButton"].waitForExistence(timeout: 8))
+        app.buttons["debugOverlayButton"].tap()
+        XCTAssertTrue(app.buttons["Import demo subscription"].waitForExistence(timeout: 8))
+        app.buttons["Import demo subscription"].tap()
+
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["debugOverlayButton"].waitForExistence(timeout: 8))
+        app.buttons["debugOverlayButton"].tap()
+        XCTAssertTrue(app.buttons["Reset app"].waitForExistence(timeout: 8))
+        app.buttons["Reset app"].tap()
+
+        XCTAssertTrue(app.staticTexts["setupScreenHeader"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["importSubscriptionButton"].waitForExistence(timeout: 8))
+    }
+
+    @MainActor
     func testScenarioDrivenLiveImportBenchmarkAndConsoleFlow() throws {
         let app = configuredApp(
             storageSuite: "ui-live-e2e-console",
@@ -59,16 +157,14 @@ final class LiveE2EWorkflowTests: XCTestCase {
         let suite = "ui-live-e2e-stale-refresh"
         let firstPass = configuredApp(
             storageSuite: suite,
-            scenario: "benchmark-home",
+            scenario: "expert-console",
             resetStorage: true,
             nowUnix: 100,
             demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
         )
         firstPass.launch()
 
-        XCTAssertTrue(
-            firstPass.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 8)
-        )
+        assertBenchmarkedConsoleState(in: firstPass)
         firstPass.terminate()
 
         let staleHint = configuredApp(
@@ -107,14 +203,12 @@ final class LiveE2EWorkflowTests: XCTestCase {
         let importSuite = "ui-live-e2e-auto-mode-apply-import"
         let importApp = configuredApp(
             storageSuite: importSuite,
-            scenario: "benchmark-home",
+            scenario: "expert-console",
             resetStorage: true,
             demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
         )
         importApp.launch()
-        XCTAssertTrue(
-            importApp.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 12)
-        )
+        assertBenchmarkedConsoleState(in: importApp, timeout: 12)
         importApp.terminate()
 
         let routingApp = configuredApp(
@@ -143,14 +237,12 @@ final class LiveE2EWorkflowTests: XCTestCase {
         let importSuite = "ui-live-e2e-manual-mode-advisory-import"
         let importApp = configuredApp(
             storageSuite: importSuite,
-            scenario: "benchmark-home",
+            scenario: "expert-console",
             resetStorage: true,
             demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
         )
         importApp.launch()
-        XCTAssertTrue(
-            importApp.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 12)
-        )
+        assertBenchmarkedConsoleState(in: importApp, timeout: 12)
         importApp.terminate()
 
         let routingApp = configuredApp(
@@ -194,15 +286,13 @@ final class LiveE2EWorkflowTests: XCTestCase {
         let suite = "ui-live-e2e-stale-or-refresh"
         let seeded = configuredApp(
             storageSuite: suite,
-            scenario: "benchmark-home",
+            scenario: "expert-console",
             resetStorage: true,
             nowUnix: 100,
             demoSubscriptionPayloadB64: try liveSubscriptionPayloadBase64()
         )
         seeded.launch()
-        XCTAssertTrue(
-            seeded.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Current setup:")).firstMatch.waitForExistence(timeout: 12)
-        )
+        assertBenchmarkedConsoleState(in: seeded, timeout: 12)
         seeded.terminate()
 
         let routingApp = configuredApp(
@@ -263,6 +353,20 @@ final class LiveE2EWorkflowTests: XCTestCase {
             app.launchEnvironment["ROCKEROOM_DEMO_TUNNEL_FAILURE"] = "1"
         }
         return app
+    }
+
+    @MainActor
+    private func configuredManualDebugApp(storageSuite: String, resetStorage: Bool) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["ROCKEROOM_STORAGE_SUITE"] = storageSuite
+        app.launchEnvironment["ROCKEROOM_RESET_STORAGE"] = resetStorage ? "1" : "0"
+        return app
+    }
+
+    @MainActor
+    private func assertBenchmarkedConsoleState(in app: XCUIApplication, timeout: TimeInterval = 8) {
+        XCTAssertTrue(app.navigationBars["Expert Console"].waitForExistence(timeout: timeout))
+        XCTAssertTrue(app.staticTexts["Ranked candidates"].waitForExistence(timeout: timeout))
     }
 
     private func liveSubscriptionPayloadBase64() throws -> String {

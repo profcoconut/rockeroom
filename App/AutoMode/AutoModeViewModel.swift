@@ -1,18 +1,38 @@
 import Foundation
 import SharedKit
 
+enum AutoModeRuntimeMode: String, Sendable {
+    case standard
+    case manualDebug
+    case launchDrivenE2E
+}
+
+struct AutoModeRuntimeProfile {
+    let mode: AutoModeRuntimeMode
+    let importer: ClashSubscriptionImporter
+    let adapter: ClashAdapter
+    let runner: ProbeRunner
+}
+
 @MainActor
 final class AutoModeViewModel: ObservableObject {
+    enum DebugImportSource: Hashable {
+        case deterministicDemo
+        case liveURL(String)
+    }
+
     @Published var subscriptionLink: String = "https://example.com/clash-subscription"
     @Published var status: AutoModeStatus = .idle
     @Published var snapshot: ResultSnapshot?
     @Published var recommendationState: RecommendationState = .idle
     @Published var tunnelStatus: ClashAdapterStatus = ClashAdapterStatus()
     @Published private(set) var refreshHintText: String?
+    @Published private(set) var hasRestoredSession = false
+    @Published private(set) var runtimeMode: AutoModeRuntimeMode
 
-    private let importer: ClashSubscriptionImporter
-    private let adapter: ClashAdapter
-    private let runner: ProbeRunner
+    private let standardRuntime: AutoModeRuntimeProfile
+    private let manualDebugRuntime: AutoModeRuntimeProfile?
+    private var activeRuntime: AutoModeRuntimeProfile
     private let snapshotStore: ResultSnapshotStore
     private let recommendationPolicy: RecommendationPolicy
     private let refreshCoordinator: RefreshCoordinator
@@ -43,6 +63,8 @@ final class AutoModeViewModel: ObservableObject {
     }
 
     init(
+        runtimeProfile: AutoModeRuntimeProfile? = nil,
+        manualDebugRuntimeProfile: AutoModeRuntimeProfile? = nil,
         importer: ClashSubscriptionImporter? = nil,
         adapter: ClashAdapter? = nil,
         runner: ProbeRunner? = nil,
@@ -59,9 +81,16 @@ final class AutoModeViewModel: ObservableObject {
         self.tunnelSessionStore = tunnelSessionStore
         self.pinStateStore = pinStateStore
         self.destinationAssignmentStore = destinationAssignmentStore
-        self.importer = importer ?? Self.makeImporter()
-        self.adapter = adapter ?? Self.makeAdapter(tunnelSessionStore: tunnelSessionStore)
-        self.runner = runner ?? ProbeRunner(executor: DemoProbeExecutor())
+        let resolvedRuntime = runtimeProfile ?? AutoModeRuntimeProfile(
+            mode: .standard,
+            importer: importer ?? ClashSubscriptionImporter(),
+            adapter: adapter ?? ClashAdapter(sessionStore: tunnelSessionStore),
+            runner: runner ?? ProbeRunner(executor: DemoProbeExecutor())
+        )
+        self.standardRuntime = resolvedRuntime
+        self.manualDebugRuntime = manualDebugRuntimeProfile
+        self.activeRuntime = resolvedRuntime
+        self.runtimeMode = resolvedRuntime.mode
         self.snapshotStore = snapshotStore
         self.recommendationPolicy = recommendationPolicy
         self.refreshCoordinator = refreshCoordinator
@@ -69,6 +98,7 @@ final class AutoModeViewModel: ObservableObject {
     }
 
     func resetStoredStateIfNeeded() async {
+        hasRestoredSession = false
         guard ProcessInfo.processInfo.environment["ROCKEROOM_RESET_STORAGE"] == "1" else { return }
         await subscriptionRepository.clear()
         await tunnelSessionStore.clear()
@@ -95,6 +125,7 @@ final class AutoModeViewModel: ObservableObject {
     }
 
     func restoreState() async {
+        hasRestoredSession = false
         let storedSubscription = await subscriptionRepository.current()
         subscriptionLink = storedSubscription?.subscriptionLink ?? subscriptionLink
         subscriptionConfig = storedSubscription?.config
@@ -103,10 +134,11 @@ final class AutoModeViewModel: ObservableObject {
         let storedSnapshot = await snapshotStore.current()
 
         let persistedSession = await tunnelSessionStore.current()
-        let liveStatus = await adapter.status()
+        let liveStatus = await activeRuntime.adapter.status()
         tunnelStatus = resolvedRestoreStatus(liveStatus: liveStatus, persistedSession: persistedSession)
         applyRefreshAssessment(rawSnapshot: storedSnapshot, trigger: .restore)
         applyStatusForCurrentState()
+        hasRestoredSession = true
     }
 
     func handleAppDidBecomeActive() async {
@@ -125,33 +157,8 @@ final class AutoModeViewModel: ObservableObject {
         status = .importing
 
         Task {
-            let result = await importer.importSubscription(from: link)
-            switch result {
-            case .accepted(let config):
-                do {
-                    try await subscriptionRepository.save(link: link, config: config)
-                    try await tunnelSessionStore.markStopped(configurationID: config.configurationID)
-                    subscriptionConfig = config
-                    tunnelStatus = ClashAdapterStatus(state: .stopped, lastConfigurationID: config.configurationID)
-                    pinState = .none
-                    await pinStateStore.clear()
-                    recommendationState = .idle
-                    refreshHintText = nil
-                    snapshot = nil
-                    await snapshotStore.clear()
-                    status = .ready
-                } catch {
-                    status = .failed(message: error.localizedDescription)
-                }
-            case .rejected(let failure):
-                if subscriptionConfig == nil {
-                    recommendationState = .rejected(
-                        RecommendationRejection(reason: .invalidSnapshot, message: failure.message)
-                    )
-                    snapshot = nil
-                }
-                status = .failed(message: failure.message)
-            }
+            let result = await activeRuntime.importer.importSubscription(from: link)
+            await handleImportResult(result, link: link)
         }
     }
 
@@ -166,10 +173,10 @@ final class AutoModeViewModel: ObservableObject {
 
         Task {
             do {
-                try await adapter.start(with: subscriptionConfig)
-                tunnelStatus = await adapter.status()
+                try await activeRuntime.adapter.start(with: subscriptionConfig)
+                tunnelStatus = await activeRuntime.adapter.status()
 
-                let newSnapshot = await runner.run(
+                let newSnapshot = await activeRuntime.runner.run(
                     subscription: subscriptionConfig,
                     sourceURL: subscriptionConfig.sourceURL,
                     now: now()
@@ -209,6 +216,52 @@ final class AutoModeViewModel: ObservableObject {
         pinState = .none
         try? await pinStateStore.update(pinState)
         reevaluateRecommendation()
+    }
+
+    func resetDebugState() async {
+        hasRestoredSession = false
+        activateStandardRuntime()
+        await subscriptionRepository.clear()
+        await tunnelSessionStore.clear()
+        await snapshotStore.clear()
+        await pinStateStore.clear()
+        await destinationAssignmentStore.clear()
+
+        subscriptionLink = "https://debug.rockeroom.local/subscription"
+        subscriptionConfig = nil
+        snapshot = nil
+        pinState = .none
+        destinationAssignment = nil
+        recommendationState = .idle
+        refreshHintText = nil
+        tunnelStatus = ClashAdapterStatus()
+        status = .idle
+        hasRestoredSession = true
+    }
+
+    func importDebugSource(_ source: DebugImportSource) async {
+        await resetDebugState()
+        activateManualDebugRuntime()
+
+        switch source {
+        case .deterministicDemo:
+            let sourceURL = URL(string: "https://debug.rockeroom.local/demo-subscription")!
+            subscriptionLink = sourceURL.absoluteString
+            status = .importing
+            let result = activeRuntime.importer.importSubscription(
+                from: Self.debugDemoSubscriptionData,
+                sourceURL: sourceURL
+            )
+            await handleImportResult(result, link: sourceURL.absoluteString)
+        case .liveURL(let rawLink):
+            let link = rawLink.trimmingCharacters(in: .whitespacesAndNewlines)
+            subscriptionLink = link
+            status = .importing
+            let result = await activeRuntime.importer.importSubscription(from: link)
+            await handleImportResult(result, link: link)
+        }
+
+        hasRestoredSession = true
     }
 
     var currentTitle: String {
@@ -547,31 +600,62 @@ final class AutoModeViewModel: ObservableObject {
         snapshot?.candidates.first(where: { $0.candidateID == candidateID })?.label ?? candidateID
     }
 
-    private static func makeImporter() -> ClashSubscriptionImporter {
-        if ProcessInfo.processInfo.environment["ROCKEROOM_USE_DEMO_FETCHER"] == "1" {
-            return ClashSubscriptionImporter(fetcher: LocalDevelopmentSubscriptionFetcher())
-        }
-
-        return ClashSubscriptionImporter()
+    func activateManualDebugRuntime() {
+        guard let manualDebugRuntime else { return }
+        activeRuntime = manualDebugRuntime
+        runtimeMode = manualDebugRuntime.mode
     }
 
-    private static func makeAdapter(tunnelSessionStore: TunnelSessionStore) -> ClashAdapter {
-        if ProcessInfo.processInfo.environment["ROCKEROOM_USE_DEMO_TUNNEL"] == "1" {
-            let manager: any TunnelManaging
-            if ProcessInfo.processInfo.environment["ROCKEROOM_DEMO_TUNNEL_FAILURE"] == "1" {
-                manager = FailingTunnelManager()
-            } else {
-                manager = InMemoryTunnelManager()
-            }
-            return ClashAdapter(
-                engine: TunnelManagerClashEngine(
-                    tunnelManager: manager,
-                    sessionStore: tunnelSessionStore
-                )
-            )
-        }
+    private func activateStandardRuntime() {
+        activeRuntime = standardRuntime
+        runtimeMode = standardRuntime.mode
+    }
 
-        return ClashAdapter(sessionStore: tunnelSessionStore)
+    private func handleImportResult(_ result: SubscriptionImportResult, link: String) async {
+        switch result {
+        case .accepted(let config):
+            do {
+                try await subscriptionRepository.save(link: link, config: config)
+                try await tunnelSessionStore.markStopped(configurationID: config.configurationID)
+                subscriptionConfig = config
+                tunnelStatus = ClashAdapterStatus(state: .stopped, lastConfigurationID: config.configurationID)
+                pinState = .none
+                await pinStateStore.clear()
+                recommendationState = .idle
+                refreshHintText = nil
+                snapshot = nil
+                await snapshotStore.clear()
+                status = .ready
+            } catch {
+                status = .failed(message: error.localizedDescription)
+            }
+        case .rejected(let failure):
+            if subscriptionConfig == nil {
+                recommendationState = .rejected(
+                    RecommendationRejection(reason: .invalidSnapshot, message: failure.message)
+                )
+                snapshot = nil
+            }
+            status = .failed(message: failure.message)
+        }
+    }
+
+    private static var debugDemoSubscriptionData: Data {
+        Data(
+            """
+            proxies:
+              - name: Debug Fast Relay
+                type: ss
+                server: 1.1.1.1
+                port: 8388
+                udp: true
+              - name: Debug Stable Relay
+                type: vmess
+                server: 2.2.2.2
+                port: 443
+                udp: true
+            """.utf8
+        )
     }
 }
 
@@ -648,7 +732,7 @@ private extension TunnelSession.RuntimeState {
     }
 }
 
-private struct LocalDevelopmentSubscriptionFetcher: SubscriptionContentFetching {
+struct LocalDevelopmentSubscriptionFetcher: SubscriptionContentFetching {
     func fetch(from url: URL) async throws -> Data {
         guard url.host?.contains("invalid") != true else {
             throw URLError(.badServerResponse)
@@ -675,7 +759,7 @@ private struct LocalDevelopmentSubscriptionFetcher: SubscriptionContentFetching 
     }
 }
 
-private struct DemoProbeExecutor: ProbeExecuting {
+struct DemoProbeExecutor: ProbeExecuting {
     func probe(_ candidate: ClashProxy) async -> ProbeCandidateResult {
         let metrics: [ProbeMetric]
         let score: Double
@@ -728,7 +812,7 @@ private struct DemoProbeExecutor: ProbeExecuting {
     }
 }
 
-private struct FailingTunnelManager: TunnelManaging {
+struct FailingTunnelManager: TunnelManaging {
     func startTunnel(configData: Data, configurationID: String) async throws {
         throw DemoTunnelError.startFailed
     }
