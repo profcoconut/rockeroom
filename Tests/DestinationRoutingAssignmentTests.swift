@@ -8,6 +8,73 @@ import XCTest
 /// and view-model integration exist.
 @MainActor
 final class DestinationRoutingAssignmentTests: XCTestCase {
+    private struct NetworkEnvironmentProbe: Decodable {
+        let environment: NetworkEnvironment
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            environment = try container.decodeIfPresent(NetworkEnvironment.self, forKey: .environment) ?? .unknown
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case environment
+        }
+    }
+
+    // MARK: - NetworkEnvironment
+
+    func testNetworkEnvironmentDefaultsUnknownWhenDecodedValueIsMissingOrUnsupported() throws {
+        let missingData = Data(#"{}"#.utf8)
+        let unsupportedData = Data(#""satellite""#.utf8)
+
+        let decodedMissing = try JSONDecoder().decode(NetworkEnvironmentProbe.self, from: missingData)
+        let decodedUnsupported = try JSONDecoder().decode(NetworkEnvironment.self, from: unsupportedData)
+
+        XCTAssertEqual(decodedMissing.environment, .unknown)
+        XCTAssertEqual(decodedUnsupported, .unknown)
+    }
+
+    // MARK: - RoutingStrategy
+
+    func testRoutingStrategyRoundTripsStableSharedVocabulary() throws {
+        let strategies: [RoutingStrategy] = [.rule, .direct, .fallbackProxy]
+
+        for strategy in strategies {
+            let data = try JSONEncoder().encode(strategy)
+            let decoded = try JSONDecoder().decode(RoutingStrategy.self, from: data)
+            XCTAssertEqual(decoded, strategy)
+            XCTAssertEqual(decoded.stableID, strategy.stableID)
+        }
+    }
+
+    func testUnsupportedRawStrategyLabelDegradesToCustomStableFallback() throws {
+        let data = Data(#""latency-smart""#.utf8)
+
+        let decoded = try JSONDecoder().decode(RoutingStrategy.self, from: data)
+
+        XCTAssertEqual(decoded, .custom("latency-smart"))
+        XCTAssertEqual(decoded.stableID, "custom")
+        XCTAssertEqual(decoded.persistedLabel, "latency-smart")
+
+        let roundTripped = try JSONDecoder().decode(RoutingStrategy.self, from: JSONEncoder().encode(decoded))
+        XCTAssertEqual(roundTripped, decoded)
+    }
+
+    // MARK: - RouteContext
+
+    func testRouteContextRepresentsEnvironmentDestinationProviderAndStrategyTogether() {
+        let context = RouteContext(
+            environment: .wifiHome,
+            destinationID: "openai",
+            providerID: "hk-01",
+            strategy: .rule
+        )
+
+        XCTAssertEqual(context.environment, .wifiHome)
+        XCTAssertEqual(context.destinationID, "openai")
+        XCTAssertEqual(context.providerID, "hk-01")
+        XCTAssertEqual(context.strategy, .rule)
+    }
 
     // MARK: - RoutingMode
 
@@ -44,8 +111,32 @@ final class DestinationRoutingAssignmentTests: XCTestCase {
         XCTAssertEqual(assignment.mode, .auto)
         XCTAssertEqual(assignment.assignedProviderID, "hk-01")
         XCTAssertEqual(assignment.assignedProviderLabel, "Hong Kong 01")
+        XCTAssertEqual(assignment.routeContext.environment, .unknown)
+        XCTAssertEqual(assignment.routeContext.strategy, .rule)
         XCTAssertEqual(assignment.strategyName, "rule")
         XCTAssertEqual(assignment.source, .automaticSelection)
+    }
+
+    func testAssignmentCanCarryExplicitRouteContextWithoutOverloadingAssignmentState() {
+        let context = RouteContext(
+            environment: .cellular,
+            destinationID: "netflix",
+            providerID: "us-01",
+            strategy: .fallbackProxy
+        )
+        let assignment = DestinationRoutingAssignment(
+            routeContext: context,
+            mode: .manual,
+            assignedProviderLabel: "US 01",
+            source: .manualOverride,
+            assignedAt: 1000
+        )
+
+        XCTAssertEqual(assignment.destinationID, "netflix")
+        XCTAssertEqual(assignment.assignedProviderID, "us-01")
+        XCTAssertEqual(assignment.routeContext.environment, .cellular)
+        XCTAssertEqual(assignment.routeContext.strategy, .fallbackProxy)
+        XCTAssertEqual(assignment.strategyName, "fallback-proxy")
     }
 
     func testManualOverrideAssignmentIsDistinguishableFromAuto() {
@@ -80,6 +171,31 @@ final class DestinationRoutingAssignmentTests: XCTestCase {
         // Minimal JSON missing evidenceLinkSnapshotID and freshness
         let json = """
         {
+            "routeContext": {
+                "destinationID": "openai",
+                "providerID": "hk-01",
+                "strategy": "rule"
+            },
+            "mode": "manual",
+            "assignedProviderLabel": "Hong Kong 01",
+            "source": "manualOverride",
+            "assignedAt": 1000
+        }
+        """.data(using: .utf8)!
+
+        let decoded = try JSONDecoder().decode(DestinationRoutingAssignment.self, from: json)
+
+        XCTAssertEqual(decoded.destinationID, "openai")
+        XCTAssertEqual(decoded.mode, .manual)
+        XCTAssertEqual(decoded.assignedProviderID, "hk-01")
+        XCTAssertEqual(decoded.routeContext.environment, .unknown)
+        XCTAssertNil(decoded.evidenceLinkSnapshotID)
+        XCTAssertNil(decoded.freshness)
+    }
+
+    func testLegacyAssignmentPayloadDefaultsRouteContextEnvironmentToUnknown() throws {
+        let json = """
+        {
             "destinationID": "openai",
             "mode": "manual",
             "assignedProviderID": "hk-01",
@@ -92,11 +208,8 @@ final class DestinationRoutingAssignmentTests: XCTestCase {
 
         let decoded = try JSONDecoder().decode(DestinationRoutingAssignment.self, from: json)
 
-        XCTAssertEqual(decoded.destinationID, "openai")
-        XCTAssertEqual(decoded.mode, .manual)
-        XCTAssertEqual(decoded.assignedProviderID, "hk-01")
-        XCTAssertNil(decoded.evidenceLinkSnapshotID)
-        XCTAssertNil(decoded.freshness)
+        XCTAssertEqual(decoded.routeContext.environment, .unknown)
+        XCTAssertEqual(decoded.routeContext.strategy, .rule)
     }
 
     func testMalformedAssignmentFailsDecoding() {
@@ -107,6 +220,27 @@ final class DestinationRoutingAssignmentTests: XCTestCase {
             "assignedProviderID": "hk-01",
             "assignedProviderLabel": "Hong Kong 01",
             "strategyName": "rule",
+            "source": "manualOverride",
+            "assignedAt": 1000
+        }
+        """.data(using: .utf8)!
+
+        XCTAssertThrowsError(
+            _ = try JSONDecoder().decode(DestinationRoutingAssignment.self, from: json)
+        )
+    }
+
+    func testMalformedRouteContextFailsPredictably() {
+        let json = """
+        {
+            "routeContext": {
+                "environment": 42,
+                "destinationID": "openai",
+                "providerID": "hk-01",
+                "strategy": "rule"
+            },
+            "mode": "manual",
+            "assignedProviderLabel": "Hong Kong 01",
             "source": "manualOverride",
             "assignedAt": 1000
         }

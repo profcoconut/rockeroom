@@ -34,6 +34,36 @@ final class DestinationRoutingAssignmentStoreTests: XCTestCase {
         XCTAssertEqual(restored?.count, 1)
         XCTAssertEqual(restored?.selectedDestinationID, "openai")
         XCTAssertEqual(restored?["openai"]?.mode, .auto)
+        XCTAssertEqual(restored?["openai"]?.routeContext.environment, .unknown)
+        XCTAssertEqual(restored?["openai"]?.routeContext.strategy, .rule)
+    }
+
+    func testStoreRoundTripsRouteContextAwareAssignmentWithEnvironmentAndStrategy() async {
+        let backingStore = InMemoryDataStore()
+        let store = DestinationRoutingAssignmentStore(store: backingStore)
+
+        var assignments = DestinationRoutingAssignments(sourceURL: "https://example.com/sub", selectedDestinationID: "openai")
+        assignments.insert(
+            DestinationRoutingAssignment(
+                routeContext: RouteContext(
+                    environment: .wifiHome,
+                    destinationID: "openai",
+                    providerID: "hk-01",
+                    strategy: .fallbackProxy
+                ),
+                mode: .auto,
+                assignedProviderLabel: "Hong Kong 01",
+                source: .automaticSelection,
+                assignedAt: 1000
+            )
+        )
+
+        await store.save(assignments)
+
+        let restored = await store.current()
+        XCTAssertEqual(restored?.selectedDestinationID, "openai")
+        XCTAssertEqual(restored?["openai"]?.routeContext.environment, .wifiHome)
+        XCTAssertEqual(restored?["openai"]?.routeContext.strategy, .fallbackProxy)
     }
 
     func testStorePersistsMultipleAssignments() async {
@@ -177,6 +207,40 @@ final class DestinationRoutingAssignmentStoreTests: XCTestCase {
 
         let restored = await store.current()
         XCTAssertNil(restored)
+    }
+
+    func testLegacyPayloadWithoutRouteContextRestoresWithSafeDefaults() async {
+        let backingStore = InMemoryDataStore()
+        let store = DestinationRoutingAssignmentStore(store: backingStore)
+        backingStore.set(
+            Data(
+                """
+                {
+                  "sourceURL": "https://example.com/sub",
+                  "selectedDestinationID": "openai",
+                  "byDestinationID": {
+                    "openai": {
+                      "destinationID": "openai",
+                      "mode": "auto",
+                      "assignedProviderID": "hk-01",
+                      "assignedProviderLabel": "Hong Kong 01",
+                      "strategyName": "rule",
+                      "source": "automaticSelection",
+                      "assignedAt": 1000
+                    }
+                  }
+                }
+                """.utf8
+            ),
+            forKey: DestinationRoutingAssignmentStore.storageKey
+        )
+
+        let restored = await store.current()
+
+        XCTAssertEqual(restored?.selectedDestinationID, "openai")
+        XCTAssertEqual(restored?["openai"]?.routeContext.environment, .unknown)
+        XCTAssertEqual(restored?["openai"]?.routeContext.strategy, .rule)
+        XCTAssertEqual(restored?["openai"]?.assignedProviderID, "hk-01")
     }
 
     // MARK: - Nil State

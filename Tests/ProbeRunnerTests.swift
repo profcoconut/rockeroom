@@ -11,9 +11,9 @@ final class ProbeRunnerTests: XCTestCase {
         ]
         let config = SubscriptionConfig(sourceURL: URL(string: "https://example.com/sub")!, proxies: proxies)
         let executor = StubProbeExecutor(results: [
-            "Slow": ProbeCandidateResult(candidateID: "Slow", label: "Slow", metrics: [ProbeMetric(name: "Latency", value: 300, unit: "ms", betterIsHigher: false)], score: 0.25, confidence: 0.7, freshness: 1.0),
-            "Fast": ProbeCandidateResult(candidateID: "Fast", label: "Fast", metrics: [ProbeMetric(name: "Latency", value: 50, unit: "ms", betterIsHigher: false)], score: 0.9, confidence: 0.95, freshness: 1.0),
-            "NeverRuns": ProbeCandidateResult(candidateID: "NeverRuns", label: "NeverRuns", metrics: [ProbeMetric(name: "Latency", value: 999, unit: "ms", betterIsHigher: false)], score: 0.1, confidence: 0.2, freshness: 1.0)
+            "Slow": ProbeCandidateResult(candidateID: "Slow", label: "Slow", metrics: [ProbeMetric(name: "Latency", value: 300, unit: "ms", betterIsHigher: false)], score: 0.25, confidence: 0.7, freshness: 1.0, failureRate: 1.8, stabilityScore: 0.55, reachabilityScore: 0.42),
+            "Fast": ProbeCandidateResult(candidateID: "Fast", label: "Fast", metrics: [ProbeMetric(name: "Latency", value: 50, unit: "ms", betterIsHigher: false)], score: 0.9, confidence: 0.95, freshness: 1.0, failureRate: 0.1, stabilityScore: 0.88, reachabilityScore: 0.96),
+            "NeverRuns": ProbeCandidateResult(candidateID: "NeverRuns", label: "NeverRuns", metrics: [ProbeMetric(name: "Latency", value: 999, unit: "ms", betterIsHigher: false)], score: 0.1, confidence: 0.2, freshness: 1.0, failureRate: 2.0, stabilityScore: 0.3, reachabilityScore: 0.2)
         ])
         let runner = ProbeRunner(executor: executor, maxConcurrentProbes: 2, decisiveGap: 0.3, minimumConfidence: 0.8)
 
@@ -24,6 +24,8 @@ final class ProbeRunnerTests: XCTestCase {
         XCTAssertEqual(snapshot.sourceURL, config.sourceURL)
         XCTAssertEqual(snapshot.selectedCandidateID, "Fast")
         XCTAssertEqual(snapshot.bestCandidate?.candidateID, "Fast")
+        XCTAssertEqual(snapshot.bestCandidate?.reachabilityScore ?? -1, 0.96, accuracy: 0.001)
+        XCTAssertEqual(snapshot.bestCandidate?.stabilityScore ?? -1, 0.88, accuracy: 0.001)
         XCTAssertLessThanOrEqual(maxActiveTasks, 2)
         XCTAssertLessThan(completed.count, 3)
     }

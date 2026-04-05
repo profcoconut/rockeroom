@@ -40,8 +40,9 @@ public final class ProbeRunner: Sendable {
             )
         }
 
-        let results = await probeCandidates(candidates)
-        let selectedCandidateID = results.sorted(by: { $0.score > $1.score }).first?.candidateID
+        let results = await probeCandidates(candidates).map(Self.normalize)
+        let orderedResults = results.sorted(by: Self.sortsAhead)
+        let selectedCandidateID = orderedResults.first?.candidateID
         let overallConfidence = results.map(\.confidence).max() ?? 0
         let freshness = results.map(\.freshness).min() ?? 0
         let isPartial = results.contains(where: \.isPartial)
@@ -49,7 +50,7 @@ public final class ProbeRunner: Sendable {
         return ResultSnapshot(
             sourceURL: sourceURL,
             generatedAt: now,
-            candidates: results.sorted(by: { $0.score > $1.score }),
+            candidates: orderedResults,
             selectedCandidateID: selectedCandidateID,
             overallConfidence: overallConfidence,
             freshness: freshness,
@@ -122,5 +123,23 @@ public final class ProbeRunner: Sendable {
         guard best.confidence >= minimumConfidence else { return false }
         guard let runnerUp = ordered.dropFirst().first else { return false }
         return (best.score - runnerUp.score) >= decisiveGap
+    }
+
+    private static func normalize(_ result: ProbeCandidateResult) -> ProbeCandidateResult {
+        var normalized = result
+        if normalized.reachabilityScore == nil {
+            normalized.reachabilityScore = normalized.isPartial ? 0.5 : 1.0
+        }
+        if normalized.stabilityScore == nil {
+            normalized.stabilityScore = normalized.score
+        }
+        return normalized
+    }
+
+    private static func sortsAhead(_ lhs: ProbeCandidateResult, _ rhs: ProbeCandidateResult) -> Bool {
+        if lhs.score == rhs.score {
+            return lhs.confidence > rhs.confidence
+        }
+        return lhs.score > rhs.score
     }
 }
