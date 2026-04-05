@@ -16,6 +16,7 @@ It does **not** seed benchmarked, pinned, stale, or tunnel-failure end states an
 `Run Benchmark` now means:
 
 - start the destination-aware fast pass
+- build explicit route candidates from environment, destination, provider, and strategy
 - persist the best current route per curated destination
 - begin foreground adaptive monitoring while the app stays active
 
@@ -78,6 +79,13 @@ The harness seeds the following state through `LiveE2EScenario.destinationAssign
 - `failed-reassignment` — Route reassignment failed and the app recovered to a safe state
 
 The runner is state-aware. It uses the normal view-model methods for import, benchmark, tab selection, and pinning rather than bypassing product code.
+
+Sprint 2 makes the benchmark contract more specific: benchmark-path assignments now come from shared route-candidate comparison, not only destination-scoped helper heuristics. The benchmark path should therefore be read as:
+
+- resolve the current environment input
+- build route candidates for each curated destination
+- compare candidates with shared evaluator logic
+- persist the resulting route-context-aware assignment output
 
 ## Destination-Aware Routing Matrix
 

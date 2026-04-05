@@ -169,6 +169,8 @@ flowchart TB
 
 ### Sprint 2
 - Candidate evaluation engine and environment-aware decision inputs
+- Implemented evaluator seams should remain the shared source of truth for this sprint:
+  `RouteCandidate`, `RouteCandidateEvaluator`, and `EnvironmentContextResolving`
 
 ### Sprint 3
 - Auto Mode monitoring, reassessment, and stable switching behavior
@@ -278,6 +280,7 @@ which combination is best now, should RockeRoom switch to it, and how should tha
 
 **Verification:**
 - The optimizer can compare route candidates in a way that is compatible with the product's route-context model.
+- Sprint 2 keeps candidate comparison in shared engine code via `RouteCandidateEvaluator`.
 
 - [ ] **Unit 3: Sprint 3 - Auto Mode monitoring and stable switching**
 

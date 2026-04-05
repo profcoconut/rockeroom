@@ -10,6 +10,7 @@
 		0664F1D418336DBF9FB47B00 /* ProbeRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8C2BCAD2794AFCCBB7E887 /* ProbeRunnerTests.swift */; };
 		0AC6DEE425065D6ED83ABE1C /* ProbeRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C296D95F45D9B79BEA48ADB6 /* ProbeRunner.swift */; };
 		0C19A1E34ABAB3562E11376E /* LiveE2ERunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E015D639E87C8DC6D38B2A0 /* LiveE2ERunner.swift */; };
+		0F7942F00B1E4A56B9D19E74 /* RouteCandidateEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B459DD9942148ED9D42254C /* RouteCandidateEvaluator.swift */; };
 		10742200DB122B0120328448 /* RecommendationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C38DD9DA6C9DD38F6B7C786 /* RecommendationState.swift */; };
 		14232F9890BA0049B6A8AA25 /* ManualPinFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83DB75D0A44D4D112826927C /* ManualPinFlowTests.swift */; };
 		148E942E3ACB10A3F799ECD5 /* EvidenceProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EEACA835C72D966EC7BDE35 /* EvidenceProjection.swift */; };
@@ -31,6 +32,7 @@
 		487BCAAAE54D66E5B80FF23B /* ResultSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8BEFFFDB710F33AE2A70FB /* ResultSnapshot.swift */; };
 		499FB3B7B3F1A9727845A024 /* ExpertConsoleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57BA70511A6137665D60F9E /* ExpertConsoleView.swift */; };
 		4AD6501D31B02C3EECBB5081 /* TunnelSessionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98D0C3D1A4A463BAD5D891F0 /* TunnelSessionStoreTests.swift */; };
+		4E8479B21A884B2CB14ABCAA /* EnvironmentContextResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DBE4A18E8C44DFF8A3B0D80 /* EnvironmentContextResolver.swift */; };
 		4BA02B248BAF972B8D42333F /* SharedKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 31060422180F3E2DF3824EBB /* SharedKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		52D1386E778C34FB58EA1E6E /* google-ai.yaml in Resources */ = {isa = PBXBuildFile; fileRef = DFFE36E30071EA9027DD6411 /* google-ai.yaml */; };
 		54925A756BF0DAA690B791A7 /* SubscriptionRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D78323FC701D025F05D552E9 /* SubscriptionRepositoryTests.swift */; };
@@ -87,6 +89,7 @@
 		E1C87030548714CB9F542B82 /* PinningPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9E0ABDC2C57B504F59ECD4 /* PinningPolicyTests.swift */; };
 		E63308F0481749C96B6EDA20 /* apple.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 8808426EBB01BCA2526021FC /* apple.yaml */; };
 		E7CC90774C131C29E8B31488 /* RefreshCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 785094D14AB47B25D4E22875 /* RefreshCoordinator.swift */; };
+		E8CB3147F78141E5857A0336 /* RouteCandidateEvaluatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A8F0F96D5DB4E6F8FD5D93C /* RouteCandidateEvaluatorTests.swift */; };
 		EF78C4EB4D1FD45A5F30265A /* ResultSnapshotStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBCC2B816BB0D36D03100653 /* ResultSnapshotStoreTests.swift */; };
 		F4417D90542B6C301378EB16 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98522BE112603E082BC5152A /* PacketTunnelProvider.swift */; };
 		FD79E1D8C416DA1832FBD5F5 /* SharedKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 31060422180F3E2DF3824EBB /* SharedKit.framework */; };
@@ -189,6 +192,7 @@
 		2978196E3898009EA01A552C /* disney.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = disney.yaml; sourceTree = "<group>"; };
 		29AC17AE5ED017FF65F61103 /* WhyThisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhyThisView.swift; sourceTree = "<group>"; };
 		2B8C2BCAD2794AFCCBB7E887 /* ProbeRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProbeRunnerTests.swift; sourceTree = "<group>"; };
+		4A8F0F96D5DB4E6F8FD5D93C /* RouteCandidateEvaluatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteCandidateEvaluatorTests.swift; sourceTree = "<group>"; };
 		2DA482412115DA9A67401664 /* LiveE2EScenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveE2EScenario.swift; sourceTree = "<group>"; };
 		2DFE8FEDDFEA7ECC19D3CF53 /* live-vless-subscription.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "live-vless-subscription.txt"; sourceTree = "<group>"; };
 		31060422180F3E2DF3824EBB /* SharedKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SharedKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -217,6 +221,7 @@
 		776B58D2CF932D0E585DA33C /* AutoModeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoModeViewModel.swift; sourceTree = "<group>"; };
 		785094D14AB47B25D4E22875 /* RefreshCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshCoordinator.swift; sourceTree = "<group>"; };
 		79C047358E6E421D5D041433 /* DestinationRoutingAssignmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationRoutingAssignmentTests.swift; sourceTree = "<group>"; };
+		7DBE4A18E8C44DFF8A3B0D80 /* EnvironmentContextResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentContextResolver.swift; sourceTree = "<group>"; };
 		80F1D28DD6F84C92AD95EC42 /* RouteContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteContext.swift; sourceTree = "<group>"; };
 		7B59AF895234EB05AD9749F6 /* ClashSubscriptionImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClashSubscriptionImporter.swift; sourceTree = "<group>"; };
 		7E7C015FFA41E63D8782F7C1 /* RoutingDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutingDestination.swift; sourceTree = "<group>"; };
@@ -224,6 +229,7 @@
 		83DB75D0A44D4D112826927C /* ManualPinFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualPinFlowTests.swift; sourceTree = "<group>"; };
 		8808426EBB01BCA2526021FC /* apple.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = apple.yaml; sourceTree = "<group>"; };
 		88C6AC810D287330C74F196E /* PersistentDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistentDataStore.swift; sourceTree = "<group>"; };
+		8B459DD9942148ED9D42254C /* RouteCandidateEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteCandidateEvaluator.swift; sourceTree = "<group>"; };
 		8D456D1ABB945C327137A00F /* AutoModeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoModeView.swift; sourceTree = "<group>"; };
 		97007BBC7B89C7A984E564D9 /* RockeRoomApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RockeRoomApp.swift; sourceTree = "<group>"; };
 		98522BE112603E082BC5152A /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
@@ -360,6 +366,7 @@
 				AC9E0ABDC2C57B504F59ECD4 /* PinningPolicyTests.swift */,
 				62A27EFC06642CDDD88FC28E /* PinStateStoreTests.swift */,
 				2B8C2BCAD2794AFCCBB7E887 /* ProbeRunnerTests.swift */,
+				4A8F0F96D5DB4E6F8FD5D93C /* RouteCandidateEvaluatorTests.swift */,
 				699FCA940416ECDF47215E41 /* RecommendationPolicyTests.swift */,
 				CBCC2B816BB0D36D03100653 /* ResultSnapshotStoreTests.swift */,
 				2716F3EDB5251AE48664779D /* RoutingOptimizationPolicyTests.swift */,
@@ -481,6 +488,7 @@
 				7B59AF895234EB05AD9749F6 /* ClashSubscriptionImporter.swift */,
 				366C9502E934C9F4F89DAF29 /* DestinationFastPassRunner.swift */,
 				E3D2BA65559B3BC2C2301B8E /* DestinationRoutingAssignmentStore.swift */,
+				7DBE4A18E8C44DFF8A3B0D80 /* EnvironmentContextResolver.swift */,
 				7EEACA835C72D966EC7BDE35 /* EvidenceProjection.swift */,
 				88C6AC810D287330C74F196E /* PersistentDataStore.swift */,
 				6FB62332891D5896C12FEFB6 /* PinStateStore.swift */,
@@ -489,6 +497,7 @@
 				785094D14AB47B25D4E22875 /* RefreshCoordinator.swift */,
 				0A8BEFFFDB710F33AE2A70FB /* ResultSnapshot.swift */,
 				5D758C4CA88DDD0D9F286CDD /* ResultSnapshotStore.swift */,
+				8B459DD9942148ED9D42254C /* RouteCandidateEvaluator.swift */,
 				C5667FC5B5D734514DBC1576 /* SubscriptionRepository.swift */,
 				46BFC57087D70F8EBB8EC0E8 /* TunnelSessionStore.swift */,
 			);
@@ -746,6 +755,7 @@
 				93A38985AD42BC3413C7A636 /* PinStateStoreTests.swift in Sources */,
 				E1C87030548714CB9F542B82 /* PinningPolicyTests.swift in Sources */,
 				0664F1D418336DBF9FB47B00 /* ProbeRunnerTests.swift in Sources */,
+				E8CB3147F78141E5857A0336 /* RouteCandidateEvaluatorTests.swift in Sources */,
 				8397E5B39BDBAC019AD4C694 /* RecommendationPolicyTests.swift in Sources */,
 				EF78C4EB4D1FD45A5F30265A /* ResultSnapshotStoreTests.swift in Sources */,
 				8D25ADD72609D28B1218C08F /* RoutingOptimizationPolicyTests.swift in Sources */,
@@ -785,6 +795,7 @@
 				90B806D00024620610D11DF1 /* ClashSubscriptionImporter.swift in Sources */,
 				A2FAEEA1FF26194C80186F26 /* DestinationFastPassRunner.swift in Sources */,
 				C823476E0BEAA4FEE3731ECA /* DestinationRoutingAssignmentStore.swift in Sources */,
+				4E8479B21A884B2CB14ABCAA /* EnvironmentContextResolver.swift in Sources */,
 				148E942E3ACB10A3F799ECD5 /* EvidenceProjection.swift in Sources */,
 				AE2BA3D9B32A4FF9AF7F1A11 /* NetworkEnvironment.swift in Sources */,
 				CC4328B7CCB5A5DC274847A2 /* PersistentDataStore.swift in Sources */,
@@ -797,6 +808,7 @@
 				487BCAAAE54D66E5B80FF23B /* ResultSnapshot.swift in Sources */,
 				B8117BBEAD0802E3C44F53B0 /* ResultSnapshotStore.swift in Sources */,
 				553E38B42A704C0F8D1D84D8 /* RouteContext.swift in Sources */,
+				0F7942F00B1E4A56B9D19E74 /* RouteCandidateEvaluator.swift in Sources */,
 				6BD129181A942B4BDFBF1E6E /* RoutingDestination.swift in Sources */,
 				AE8D772B082740BFBBC0F0D2 /* RoutingStrategy.swift in Sources */,
 				58B088F90E45502A83E11DDD /* StoredSubscription.swift in Sources */,

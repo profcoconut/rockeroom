@@ -24,6 +24,10 @@ public struct ProbeCandidateResult: Equatable, Sendable, Codable, Identifiable {
     public var confidence: Double
     public var freshness: Double
     public var isPartial: Bool
+    public var routeContext: RouteContext?
+    public var failureRate: Double?
+    public var stabilityScore: Double?
+    public var reachabilityScore: Double?
 
     public init(
         candidateID: String,
@@ -32,7 +36,11 @@ public struct ProbeCandidateResult: Equatable, Sendable, Codable, Identifiable {
         score: Double,
         confidence: Double,
         freshness: Double,
-        isPartial: Bool = false
+        isPartial: Bool = false,
+        routeContext: RouteContext? = nil,
+        failureRate: Double? = nil,
+        stabilityScore: Double? = nil,
+        reachabilityScore: Double? = nil
     ) {
         self.candidateID = candidateID
         self.label = label
@@ -41,6 +49,14 @@ public struct ProbeCandidateResult: Equatable, Sendable, Codable, Identifiable {
         self.confidence = confidence
         self.freshness = freshness
         self.isPartial = isPartial
+        self.routeContext = routeContext
+        self.failureRate = failureRate
+        self.stabilityScore = stabilityScore
+        self.reachabilityScore = reachabilityScore
+    }
+
+    public var latencyMS: Double? {
+        metrics.first(where: { $0.name == "Latency" })?.value
     }
 }
 

@@ -111,6 +111,22 @@ struct TestStubProbeExecutor: ProbeExecuting {
     }
 }
 
+struct TestMappingProbeExecutor: ProbeExecuting {
+    let resultsByName: [String: ProbeCandidateResult]
+
+    func probe(_ candidate: ClashProxy) async -> ProbeCandidateResult {
+        resultsByName[candidate.name] ?? ProbeCandidateResult(
+            candidateID: candidate.id,
+            label: candidate.name,
+            metrics: [],
+            score: 0,
+            confidence: 0,
+            freshness: 0,
+            isPartial: true
+        )
+    }
+}
+
 actor TestStubTunnelManager: TunnelManaging {
     private let statusAfterStart: ClashAdapterStatus.State
     private var currentStatus = ClashAdapterStatus()
@@ -162,6 +178,7 @@ actor TestSequencedDestinationRoutingEvaluator: DestinationRoutingEvaluating {
     func evaluate(
         subscription: SubscriptionConfig,
         sourceURL: URL,
+        snapshot: ResultSnapshot?,
         destinations: [RoutingDestination],
         previousAssignments: DestinationRoutingAssignments?,
         pinState: PinState,

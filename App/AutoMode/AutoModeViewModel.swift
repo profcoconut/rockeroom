@@ -16,6 +16,13 @@ struct AutoModeRuntimeProfile {
 
 @MainActor
 final class AutoModeViewModel: ObservableObject {
+    enum AdaptiveRoutingState: Equatable {
+        case inactive
+        case fastPass
+        case monitoring
+        case degraded(String)
+    }
+
     enum DebugImportSource: Hashable {
         case deterministicDemo
         case liveURL(String)
@@ -29,6 +36,7 @@ final class AutoModeViewModel: ObservableObject {
     @Published private(set) var refreshHintText: String?
     @Published private(set) var hasRestoredSession = false
     @Published private(set) var runtimeMode: AutoModeRuntimeMode
+    @Published private(set) var adaptiveRoutingState: AdaptiveRoutingState = .inactive
 
     private let standardRuntime: AutoModeRuntimeProfile
     private let manualDebugRuntime: AutoModeRuntimeProfile?
@@ -40,8 +48,12 @@ final class AutoModeViewModel: ObservableObject {
     private let tunnelSessionStore: TunnelSessionStore
     private let pinStateStore: PinStateStore
     private let destinationAssignmentStore: DestinationRoutingAssignmentStore
+    private let destinationRoutingEvaluator: any DestinationRoutingEvaluating
+    private let routingDestinations: [RoutingDestination]
+    private let monitoringInterval: TimeInterval
     private let now: @Sendable () -> Date
     private var subscriptionConfig: SubscriptionConfig?
+    private var monitoringTask: Task<Void, Never>?
     @Published private(set) var pinState: PinState = .none
     @Published private(set) var destinationAssignment: DestinationRoutingAssignments?
 
@@ -75,12 +87,18 @@ final class AutoModeViewModel: ObservableObject {
         tunnelSessionStore: TunnelSessionStore = TunnelSessionStore(),
         pinStateStore: PinStateStore = PinStateStore(),
         destinationAssignmentStore: DestinationRoutingAssignmentStore = DestinationRoutingAssignmentStore(),
+        destinationRoutingEvaluator: any DestinationRoutingEvaluating = DestinationFastPassRunner(),
+        routingDestinations: [RoutingDestination] = RoutingDestination.v1Catalog,
+        monitoringInterval: TimeInterval = 8,
         now: @escaping @Sendable () -> Date = Date.init
     ) {
         self.subscriptionRepository = subscriptionRepository
         self.tunnelSessionStore = tunnelSessionStore
         self.pinStateStore = pinStateStore
         self.destinationAssignmentStore = destinationAssignmentStore
+        self.destinationRoutingEvaluator = destinationRoutingEvaluator
+        self.routingDestinations = routingDestinations
+        self.monitoringInterval = monitoringInterval
         let resolvedRuntime = runtimeProfile ?? AutoModeRuntimeProfile(
             mode: .standard,
             importer: importer ?? ClashSubscriptionImporter(),
@@ -113,6 +131,8 @@ final class AutoModeViewModel: ObservableObject {
         tunnelStatus = ClashAdapterStatus()
         status = .idle
         destinationAssignment = nil
+        adaptiveRoutingState = .inactive
+        stopForegroundMonitoring()
     }
 
     /// Seeds destination assignment state for E2E harness purposes.
@@ -138,6 +158,11 @@ final class AutoModeViewModel: ObservableObject {
         tunnelStatus = resolvedRestoreStatus(liveStatus: liveStatus, persistedSession: persistedSession)
         applyRefreshAssessment(rawSnapshot: storedSnapshot, trigger: .restore)
         applyStatusForCurrentState()
+        if destinationAssignment?.isEmpty == false {
+            adaptiveRoutingState = .monitoring
+        } else {
+            adaptiveRoutingState = .inactive
+        }
         hasRestoredSession = true
     }
 
@@ -150,6 +175,13 @@ final class AutoModeViewModel: ObservableObject {
         }
         applyRefreshAssessment(rawSnapshot: rawSnapshot, trigger: .foreground)
         applyStatusForCurrentState()
+        if hasImportedSubscription, destinationAssignment?.isEmpty == false {
+            startForegroundMonitoring()
+        }
+    }
+
+    func handleAppDidEnterBackground() {
+        stopForegroundMonitoring()
     }
 
     func importSubscriptionLink(_ link: String) {
@@ -169,6 +201,7 @@ final class AutoModeViewModel: ObservableObject {
         }
 
         status = .optimizing
+        adaptiveRoutingState = .fastPass
         tunnelStatus = ClashAdapterStatus(state: .starting, lastConfigurationID: subscriptionConfig.configurationID)
 
         Task {
@@ -182,7 +215,21 @@ final class AutoModeViewModel: ObservableObject {
                     now: now()
                 )
                 await snapshotStore.update(newSnapshot)
+                let newAssignments = await destinationRoutingEvaluator.evaluate(
+                    subscription: subscriptionConfig,
+                    sourceURL: subscriptionConfig.sourceURL,
+                    snapshot: newSnapshot,
+                    destinations: routingDestinations,
+                    previousAssignments: destinationAssignment,
+                    pinState: pinState,
+                    phase: .fastPass,
+                    now: now()
+                )
+                await destinationAssignmentStore.save(newAssignments)
+                destinationAssignment = newAssignments
                 applyRefreshAssessment(rawSnapshot: newSnapshot, trigger: .explicit)
+                adaptiveRoutingState = .monitoring
+                startForegroundMonitoring()
                 status = .running
             } catch {
                 let message = error.localizedDescription
@@ -196,6 +243,7 @@ final class AutoModeViewModel: ObservableObject {
                         RecommendationRejection(reason: .invalidSnapshot, message: message)
                     )
                 }
+                adaptiveRoutingState = .degraded(message)
             }
         }
     }
@@ -236,6 +284,7 @@ final class AutoModeViewModel: ObservableObject {
         refreshHintText = nil
         tunnelStatus = ClashAdapterStatus()
         status = .idle
+        adaptiveRoutingState = .inactive
         hasRestoredSession = true
     }
 
@@ -416,7 +465,7 @@ final class AutoModeViewModel: ObservableObject {
     }
 
     var benchmarkActionTitle: String {
-        hasBenchmarkResults ? "Refresh Benchmark" : "Run Benchmark"
+        hasBenchmarkResults ? "Refresh Adaptive Routing" : "Run Benchmark"
     }
 
     var isBenchmarkInFlight: Bool {
@@ -463,6 +512,51 @@ final class AutoModeViewModel: ObservableObject {
             return "Recommendation unavailable"
         case .idle, .evaluating:
             return "Benchmark in progress"
+        }
+    }
+
+    var monitoringStatusText: String {
+        switch adaptiveRoutingState {
+        case .inactive:
+            return "Monitoring inactive"
+        case .fastPass:
+            return "Running fast pass"
+        case .monitoring:
+            return "Foreground monitoring active"
+        case .degraded:
+            return "Monitoring degraded"
+        }
+    }
+
+    var adaptiveRoutingSummaryTitle: String {
+        guard destinationAssignment?.isEmpty == false else {
+            return "Adaptive routing is ready to start"
+        }
+
+        return "Adaptive routing is live"
+    }
+
+    var adaptiveRoutingSummaryText: String {
+        guard let destinationAssignment, !destinationAssignment.isEmpty else {
+            return "Run Benchmark to pick the best current route for the curated destinations and start foreground monitoring."
+        }
+
+        let switched = destinationAssignment.all.filter { $0.status == .switched }.count
+        let held = destinationAssignment.all.filter { $0.status == .holding || $0.status == .pinned }.count
+        if switched > 0 {
+            return "RockeRoom is monitoring \(destinationAssignment.count) destinations. \(switched) routes improved recently and \(held) are being held for safety or manual control."
+        }
+        return "RockeRoom is monitoring \(destinationAssignment.count) destinations and holding steady until a clearly better route appears."
+    }
+
+    var adaptiveRoutingHighlights: [DestinationRoutingAssignment] {
+        guard let destinationAssignment else { return [] }
+        let priority: [DestinationAssignmentStatus] = [.switched, .pinned, .holding, .monitoring, .degraded]
+        return destinationAssignment.all.sorted { lhs, rhs in
+            let leftIndex = priority.firstIndex(of: lhs.status ?? .monitoring) ?? priority.count
+            let rightIndex = priority.firstIndex(of: rhs.status ?? .monitoring) ?? priority.count
+            if leftIndex != rightIndex { return leftIndex < rightIndex }
+            return lhs.destinationID < rhs.destinationID
         }
     }
 
@@ -625,6 +719,10 @@ final class AutoModeViewModel: ObservableObject {
                 refreshHintText = nil
                 snapshot = nil
                 await snapshotStore.clear()
+                await destinationAssignmentStore.clear()
+                destinationAssignment = nil
+                adaptiveRoutingState = .inactive
+                stopForegroundMonitoring()
                 status = .ready
             } catch {
                 status = .failed(message: error.localizedDescription)
@@ -656,6 +754,40 @@ final class AutoModeViewModel: ObservableObject {
                 udp: true
             """.utf8
         )
+    }
+
+    private func startForegroundMonitoring() {
+        guard monitoringInterval > 0, adaptiveRoutingState == .monitoring, subscriptionConfig != nil else { return }
+        monitoringTask?.cancel()
+        monitoringTask = Task { [monitoringInterval] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(monitoringInterval * 1_000_000_000))
+                if Task.isCancelled { break }
+                await runForegroundMonitoringIteration()
+            }
+        }
+    }
+
+    private func stopForegroundMonitoring() {
+        monitoringTask?.cancel()
+        monitoringTask = nil
+    }
+
+    private func runForegroundMonitoringIteration() async {
+        guard let subscriptionConfig, adaptiveRoutingState == .monitoring else { return }
+
+        let updatedAssignments = await destinationRoutingEvaluator.evaluate(
+            subscription: subscriptionConfig,
+            sourceURL: subscriptionConfig.sourceURL,
+            snapshot: snapshot,
+            destinations: routingDestinations,
+            previousAssignments: destinationAssignment,
+            pinState: pinState,
+            phase: .monitoring,
+            now: now()
+        )
+        await destinationAssignmentStore.save(updatedAssignments)
+        destinationAssignment = updatedAssignments
     }
 }
 
