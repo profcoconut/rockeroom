@@ -1,0 +1,4 @@
+id: youtube
+label: YouTube
+rule_family: ios_rule_script/streaming
+fallback: false

@@ -1,0 +1,4 @@
+id: apple
+label: Apple
+rule_family: ios_rule_script/apple
+fallback: false

@@ -33,6 +33,24 @@ If the command fails because `CoreSimulatorService` loses the simulator device s
 - Unpin from Expert Console and confirm policy-controlled recommendation resumes
 - Open Marketplace and confirm it reflects the same current or stale evidence state shown in Auto Mode
 
+## Destination-Aware Routing Proof Points (Deferred to Later Sprints)
+
+These proof points are not yet validated in this alpha but define the validation obligations for when destination routing is implemented. They are documented here so the alpha checklist does not silently exclude them.
+
+**Auto Mode (auto-switching):**
+- A measured better route is auto-applied when evidence is strong and fresh
+- Auto Mode holds when evidence is stale, confidence is low, or the delta is insignificant
+- Auto Mode holds when the user has pinned a provider, even if a better route exists
+
+**Manual Mode (advisory only):**
+- A measured better route is surfaced as advisory — the user must confirm before RockeRoom applies it
+- Manual Mode never auto-switches regardless of evidence strength
+
+**Destination Context (future):**
+- Route quality metrics become destination-specific — e.g., "Latency to Netflix" vs "Latency to OpenAI"
+- Pin state is scoped per destination: pinning "Netflix" does not affect "OpenAI" routing decisions
+- Home surface `currentSetupText` reflects the measured provider for the active destination
+
 ## Release Notes for Evaluators
 
 - Auto Mode is the home surface

@@ -1,0 +1,4 @@
+id: google-ai
+label: Google AI
+rule_family: ios_rule_script/ai
+fallback: false

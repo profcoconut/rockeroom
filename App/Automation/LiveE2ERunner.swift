@@ -8,6 +8,7 @@ final class LiveE2ERunner: ObservableObject {
             let title: String
         }
 
+        let hasRestoredSession: Bool
         let hasImportedSubscription: Bool
         let importErrorMessage: String?
         let isImporting: Bool
@@ -61,6 +62,7 @@ final class LiveE2ERunner: ObservableObject {
     }
 
     func nextAction(for state: State) -> Action? {
+        guard state.hasRestoredSession else { return nil }
         guard let scenario else { return nil }
 
         switch scenario.kind {
@@ -84,6 +86,17 @@ final class LiveE2ERunner: ObservableObject {
             return nextTunnelFailureAction(for: state)
         case .tunnelRecovery:
             return nextTunnelRecoveryAction(for: state)
+
+        case .autoModeApply:
+            return nextAutoModeApplyAction(for: state)
+        case .manualModeAdvisory:
+            return nextManualModeAdvisoryAction(for: state)
+        case .overrideOrPin:
+            return nextOverrideOrPinAction(for: state)
+        case .staleOrRefresh:
+            return nextStaleOrRefreshAction(for: state)
+        case .failedReassignment:
+            return nextFailedReassignmentAction(for: state)
         }
     }
 
@@ -230,6 +243,45 @@ final class LiveE2ERunner: ObservableObject {
         }
 
         return nil
+    }
+
+    private func nextAutoModeApplyAction(for state: State) -> Action? {
+        nextBenchmarkAction(for: state)
+    }
+
+    private func nextManualModeAdvisoryAction(for state: State) -> Action? {
+        if let action = nextBenchmarkAction(for: state), action != .selectTab(.home) {
+            return action
+        }
+
+        if state.hasBenchmarkResults && state.selectedTab != .expertConsole {
+            return unresolved(.selectTab(.expertConsole))
+        }
+
+        return nil
+    }
+
+    private func nextOverrideOrPinAction(for state: State) -> Action? {
+        if !hasExecuted(.pinCandidate("pending")) {
+            if let action = nextPinStableAction(for: state) {
+                return action
+            }
+            return nil
+        }
+
+        if state.pinnedCandidateID != nil && state.selectedTab != .home {
+            return unresolved(.selectTab(.home))
+        }
+
+        return nil
+    }
+
+    private func nextStaleOrRefreshAction(for state: State) -> Action? {
+        nextStaleHintAction(for: state)
+    }
+
+    private func nextFailedReassignmentAction(for state: State) -> Action? {
+        nextTunnelFailureAction(for: state)
     }
 
     private func unresolved(_ action: Action) -> Action? {
