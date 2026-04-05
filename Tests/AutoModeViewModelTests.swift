@@ -46,10 +46,298 @@ final class AutoModeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.currentSetupText, "Current setup: Primary")
     }
 
+    func testDebugResetClearsImportedAndMeasuredState() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+        let assignmentStore = DestinationRoutingAssignmentStore(store: dataStore)
+        let config = SubscriptionConfig(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            subscriptionName: "Primary",
+            proxies: [ClashProxy(name: "Fast Relay", type: "ss")]
+        )
+        try await repository.save(link: "https://example.com/sub", config: config)
+        try await sessionStore.sync(
+            status: ClashAdapterStatus(state: .running, lastConfigurationID: config.configurationID),
+            configurationID: config.configurationID
+        )
+        await snapshotStore.update(
+            ResultSnapshot(
+                sourceURL: config.sourceURL,
+                candidates: [
+                    ProbeCandidateResult(
+                        candidateID: "fast",
+                        label: "Fast Relay",
+                        metrics: [ProbeMetric(name: "Latency", value: 42, unit: "ms", betterIsHigher: false)],
+                        score: 0.94,
+                        confidence: 0.91,
+                        freshness: 0.95
+                    )
+                ],
+                overallConfidence: 0.9,
+                freshness: 0.93,
+                isPartial: false
+            )
+        )
+        try await pinStateStore.update(.pinned(candidateID: "fast"))
+        var assignments = DestinationRoutingAssignments(sourceURL: "https://example.com/sub")
+        assignments.selectedDestinationID = "openai"
+        await assignmentStore.save(assignments)
+
+        let viewModel = AutoModeViewModel(
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.stopped),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor()),
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore,
+            destinationAssignmentStore: assignmentStore
+        )
+
+        await viewModel.restoreState()
+        await viewModel.resetDebugState()
+
+        XCTAssertTrue(viewModel.hasRestoredSession)
+        XCTAssertFalse(viewModel.hasImportedSubscription)
+        XCTAssertEqual(viewModel.status, .idle)
+        XCTAssertEqual(viewModel.subscriptionDisplayName, "Imported Clash subscription")
+        XCTAssertFalse(viewModel.hasBenchmarkResults)
+        let storedSubscription = await repository.current()
+        let storedSnapshot = await snapshotStore.current()
+        let storedPinState = await pinStateStore.current()
+        let storedAssignments = await assignmentStore.current()
+
+        XCTAssertNil(storedSubscription)
+        XCTAssertNil(storedSnapshot)
+        XCTAssertEqual(storedPinState, .none)
+        XCTAssertNil(storedAssignments)
+    }
+
+    func testDebugDeterministicImportProducesNormalPostImportReadyState() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+        let assignmentStore = DestinationRoutingAssignmentStore(store: dataStore)
+
+        let viewModel = AutoModeViewModel(
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.running),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor()),
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore,
+            destinationAssignmentStore: assignmentStore
+        )
+
+        await viewModel.importDebugSource(.deterministicDemo)
+
+        XCTAssertTrue(viewModel.hasRestoredSession)
+        XCTAssertTrue(viewModel.hasImportedSubscription)
+        XCTAssertEqual(viewModel.status, .ready)
+        XCTAssertFalse(viewModel.hasBenchmarkResults)
+        XCTAssertEqual(viewModel.subscriptionDisplayName, "Imported Clash subscription")
+        XCTAssertEqual(viewModel.currentSetupText, "Current setup: imported Clash subscription")
+    }
+
+    func testDebugImportActivatesManualDebugRuntimeForBenchmarking() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+
+        let standardRuntime = AutoModeRuntimeProfile(
+            mode: .standard,
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestFailingTunnelManager(),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor())
+        )
+        let manualDebugRuntime = AutoModeRuntimeProfile(
+            mode: .manualDebug,
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.running),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor())
+        )
+
+        let viewModel = AutoModeViewModel(
+            runtimeProfile: standardRuntime,
+            manualDebugRuntimeProfile: manualDebugRuntime,
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore
+        )
+
+        XCTAssertEqual(viewModel.runtimeMode, .standard)
+
+        await viewModel.importDebugSource(.deterministicDemo)
+        XCTAssertEqual(viewModel.runtimeMode, .manualDebug)
+
+        viewModel.optimize()
+        try? await Task.sleep(nanoseconds: 50_000_000)
+
+        XCTAssertEqual(viewModel.tunnelStatus.state, .running)
+        XCTAssertEqual(viewModel.status, .running)
+        XCTAssertTrue(viewModel.hasBenchmarkResults)
+    }
+
+    func testResetDebugStateReturnsToStandardRuntimeMode() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+
+        let standardRuntime = AutoModeRuntimeProfile(
+            mode: .standard,
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.stopped),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor())
+        )
+        let manualDebugRuntime = AutoModeRuntimeProfile(
+            mode: .manualDebug,
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.running),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor())
+        )
+
+        let viewModel = AutoModeViewModel(
+            runtimeProfile: standardRuntime,
+            manualDebugRuntimeProfile: manualDebugRuntime,
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore
+        )
+
+        await viewModel.importDebugSource(.deterministicDemo)
+        XCTAssertEqual(viewModel.runtimeMode, .manualDebug)
+
+        await viewModel.resetDebugState()
+
+        XCTAssertEqual(viewModel.runtimeMode, .standard)
+        XCTAssertFalse(viewModel.hasImportedSubscription)
+    }
+
+    func testDebugLiveURLImportUsesSameFetcherPathAsNormalImport() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+        let liveURL = "https://provider.example.com/subscription"
+        let importer = ClashSubscriptionImporter(
+            fetcher: TestMappingFetcher(
+                payloads: [
+                    liveURL: Data(
+                        """
+                        proxies:
+                          - name: Live Debug Relay
+                            type: ss
+                            server: 9.9.9.9
+                            port: 8388
+                        """.utf8
+                    )
+                ]
+            )
+        )
+
+        let viewModel = AutoModeViewModel(
+            importer: importer,
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.stopped),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor()),
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore
+        )
+
+        await viewModel.importDebugSource(.liveURL(liveURL))
+
+        XCTAssertEqual(viewModel.subscriptionLink, liveURL)
+        XCTAssertTrue(viewModel.hasImportedSubscription)
+        XCTAssertEqual(viewModel.status, .ready)
+        XCTAssertFalse(viewModel.hasBenchmarkResults)
+        XCTAssertEqual(viewModel.currentSetupText, "Current setup: imported Clash subscription")
+    }
+
+    func testDebugLiveURLImportSurfacesSameFailureAsNormalBadImport() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+        let importer = ClashSubscriptionImporter(fetcher: TestFailingFetcher())
+
+        let viewModel = AutoModeViewModel(
+            importer: importer,
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.stopped),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor()),
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore
+        )
+
+        await viewModel.importDebugSource(.liveURL("https://provider.example.com/invalid"))
+
+        XCTAssertFalse(viewModel.hasImportedSubscription)
+        XCTAssertEqual(viewModel.status, .failed(message: "Could not load the Clash subscription link."))
+        XCTAssertEqual(viewModel.importErrorMessage, "Could not load the Clash subscription link.")
+        XCTAssertFalse(viewModel.hasBenchmarkResults)
+    }
+
     func testImportFailurePreservesExistingStoredSubscription() async throws {
         let dataStore = InMemoryDataStore()
         let repository = SubscriptionRepository(store: dataStore)
         let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
         let pinStateStore = PinStateStore(store: dataStore)
         let initialConfig = SubscriptionConfig(
             sourceURL: URL(string: "https://example.com/original")!,
@@ -67,6 +355,7 @@ final class AutoModeViewModelTests: XCTestCase {
                 )
             ),
             runner: ProbeRunner(executor: TestStubProbeExecutor()),
+            snapshotStore: snapshotStore,
             subscriptionRepository: repository,
             tunnelSessionStore: sessionStore,
             pinStateStore: pinStateStore
