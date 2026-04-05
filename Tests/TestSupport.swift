@@ -151,3 +151,62 @@ actor TestFailingTunnelManager: TunnelManaging {
         }
     }
 }
+
+actor TestSequencedDestinationRoutingEvaluator: DestinationRoutingEvaluating {
+    private var evaluations: [DestinationRoutingAssignments]
+
+    init(evaluations: [DestinationRoutingAssignments]) {
+        self.evaluations = evaluations
+    }
+
+    func evaluate(
+        subscription: SubscriptionConfig,
+        sourceURL: URL,
+        destinations: [RoutingDestination],
+        previousAssignments: DestinationRoutingAssignments?,
+        pinState: PinState,
+        phase: AdaptiveRoutingPhase,
+        now: Date
+    ) async -> DestinationRoutingAssignments {
+        if evaluations.isEmpty {
+            return previousAssignments ?? DestinationRoutingAssignments(sourceURL: sourceURL.absoluteString)
+        }
+        if evaluations.count == 1 {
+            return evaluations[0]
+        }
+        return evaluations.removeFirst()
+    }
+}
+
+func makeDestinationAssignments(
+    sourceURL: String = "https://example.com/sub",
+    selectedDestinationID: String = "openai",
+    providerByDestination: [String: String],
+    environment: NetworkEnvironment = .unknown,
+    strategy: RoutingStrategy = .rule
+) -> DestinationRoutingAssignments {
+    var assignments = DestinationRoutingAssignments(sourceURL: sourceURL, selectedDestinationID: selectedDestinationID)
+    for (destinationID, provider) in providerByDestination {
+        assignments.insert(
+            DestinationRoutingAssignment(
+                routeContext: RouteContext(
+                    environment: environment,
+                    destinationID: destinationID,
+                    providerID: provider,
+                    strategy: strategy
+                ),
+                mode: .auto,
+                assignedProviderLabel: provider,
+                source: .automaticSelection,
+                assignedAt: 1000,
+                freshness: 0.95,
+                status: .monitoring,
+                measuredLatencyMS: provider.localizedCaseInsensitiveContains("fast") ? 34 : 58,
+                failureRate: provider.localizedCaseInsensitiveContains("fast") ? 0.2 : 0.8,
+                stabilityScore: 0.88,
+                recentChangeSummary: "Monitoring current route health."
+            )
+        )
+    }
+    return assignments
+}

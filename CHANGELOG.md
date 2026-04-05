@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1.0] - 2026-04-06
+
+### Added
+- Added shared route-context domain types for environment, strategy, and tuple-based route identity so destination assignments can carry `environment + destination + provider + strategy` as one production model.
+- Added route-context persistence and contract coverage, including legacy payload restore checks and direct regression tests for adaptive-routing monitoring behavior.
+
+### Changed
+- Updated destination routing assignments and storage to preserve route context while keeping older flat payloads decodable.
+- Updated the roadmap, Sprint 1 plan, and live E2E documentation to describe the route-context foundation as the canonical shared truth for later routing work.
+
+### Fixed
+- Fixed adaptive-routing monitoring so unchanged reassessments stay in `monitoring` state instead of being mislabeled as fresh switches.
+- Fixed the fast-pass hold path so a missing previous provider no longer silently falls through into an unintended switch while reporting a hold decision.
+
 ## [0.1.0.0] - 2026-04-04
 
 ### Added

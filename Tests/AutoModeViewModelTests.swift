@@ -645,5 +645,8 @@ final class AutoModeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.destinationAssignment?.selectedDestinationID, "openai")
         XCTAssertEqual(viewModel.destinationAssignment?["openai"]?.assignedProviderID, "hk-01")
         XCTAssertEqual(viewModel.destinationAssignment?["openai"]?.mode, .auto)
+        XCTAssertEqual(viewModel.destinationAssignment?["openai"]?.routeContext.environment, .unknown)
+        XCTAssertEqual(viewModel.destinationAssignment?["openai"]?.routeContext.strategy, .rule)
     }
+
 }
