@@ -318,6 +318,7 @@ final class RouteSwitchPolicyTests: XCTestCase {
 
         let decision = policy.decide(
             currentAssignment: currentAssignment,
+            currentCandidate: makeCandidate(providerID: "stable", latencyMS: 54, confidence: 0.9, freshness: 0.95, stabilityScore: 0.9),
             bestCandidate: bestCandidate,
             runnerUpCandidate: makeCandidate(providerID: "stable", latencyMS: 54, confidence: 0.9, freshness: 0.95, stabilityScore: 0.9),
             pinState: .pinned(candidateID: "stable"),
@@ -339,6 +340,7 @@ final class RouteSwitchPolicyTests: XCTestCase {
 
         let decision = policy.decide(
             currentAssignment: currentAssignment,
+            currentCandidate: makeCandidate(providerID: "stable", latencyMS: 41, confidence: 0.9, freshness: 0.95, stabilityScore: 0.9),
             bestCandidate: bestCandidate,
             runnerUpCandidate: makeCandidate(providerID: "stable", latencyMS: 41, confidence: 0.9, freshness: 0.95, stabilityScore: 0.9),
             pinState: .none,
@@ -360,6 +362,7 @@ final class RouteSwitchPolicyTests: XCTestCase {
 
         let decision = policy.decide(
             currentAssignment: currentAssignment,
+            currentCandidate: makeCandidate(providerID: "stable", latencyMS: 44, confidence: 0.9, freshness: 0.95, stabilityScore: 0.9),
             bestCandidate: bestCandidate,
             runnerUpCandidate: makeCandidate(providerID: "stable", latencyMS: 44, confidence: 0.9, freshness: 0.95, stabilityScore: 0.9),
             pinState: .none,
@@ -380,6 +383,7 @@ final class RouteSwitchPolicyTests: XCTestCase {
 
         let decision = policy.decide(
             currentAssignment: currentAssignment,
+            currentCandidate: makeCandidate(providerID: "stable", latencyMS: 44, confidence: 0.4, freshness: 0.3, stabilityScore: 0.9),
             bestCandidate: nil,
             runnerUpCandidate: nil,
             pinState: .none,
@@ -392,6 +396,26 @@ final class RouteSwitchPolicyTests: XCTestCase {
         }
         XCTAssertEqual(outcome.reason, .monitoringUnavailable)
         XCTAssertEqual(outcome.selectedCandidate?.candidate.routeContext.providerID, "stable")
+    }
+
+    func testMissingEvidenceWithoutCurrentCandidateLeavesSelectionUnsetForRunnerPreservation() {
+        let policy = RouteSwitchPolicy()
+        let currentAssignment = makeAssignment(providerID: "stable", latencyMS: 44, stabilityScore: 0.9)
+
+        let decision = policy.decide(
+            currentAssignment: currentAssignment,
+            bestCandidate: nil,
+            runnerUpCandidate: nil,
+            pinState: .none,
+            phase: .monitoring,
+            monitoringAvailable: false
+        )
+
+        guard case .holdCurrent(let outcome) = decision else {
+            return XCTFail("Expected a hold decision.")
+        }
+        XCTAssertEqual(outcome.reason, .monitoringUnavailable)
+        XCTAssertNil(outcome.selectedCandidate)
     }
 
     func testSameProviderSelectionBecomesNoViableBetterCandidateHoldDuringMonitoring() {
@@ -465,6 +489,145 @@ final class RouteSwitchPolicyTests: XCTestCase {
             failureRate: 0.2,
             stabilityScore: stabilityScore,
             reachabilityScore: 0.95
+        )
+    }
+}
+
+final class DestinationFastPassRunnerFailurePreservationTests: XCTestCase {
+    func testDegradedMonitoringPreservesPreviousAssignmentWhenCurrentProviderFallsOutOfRanking() async {
+        let degradedBestCandidate = EvaluatedRouteCandidate(
+            candidate: RouteCandidate(
+                routeContext: RouteContext(
+                    environment: .wifiHome,
+                    destinationID: "openai",
+                    providerID: "fast",
+                    strategy: .direct
+                ),
+                providerLabel: "Fast Relay"
+            ),
+            score: 0.9,
+            confidence: 0.4,
+            freshness: 0.3,
+            isPartial: false,
+            latencyMS: 39,
+            failureRate: 0.3,
+            stabilityScore: 0.75,
+            reachabilityScore: 0.9
+        )
+        let evaluator = StubRouteCandidateEvaluator(
+            evaluation: RouteCandidateEvaluation(
+                rankedCandidates: [degradedBestCandidate],
+                selectedCandidate: nil,
+                degradationReason: "Route evidence is too weak to claim a healthy best candidate."
+            )
+        )
+        let runner = DestinationFastPassRunner(
+            routeCandidateEvaluator: evaluator,
+            environmentResolver: StaticEnvironmentContextResolver(environment: .wifiHome)
+        )
+        let subscription = SubscriptionConfig(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            proxies: [
+                ClashProxy(name: "Fast Relay", type: "ss"),
+                ClashProxy(name: "Stable Relay", type: "vmess")
+            ]
+        )
+        var previousAssignments = DestinationRoutingAssignments(
+            sourceURL: subscription.sourceURL.absoluteString,
+            selectedDestinationID: "openai"
+        )
+        previousAssignments.insert(
+            DestinationRoutingAssignment(
+                destinationID: "openai",
+                mode: .auto,
+                assignedProviderID: "stable",
+                assignedProviderLabel: "Stable Relay",
+                strategyName: "fallback-proxy",
+                source: .automaticSelection,
+                assignedAt: 1000,
+                freshness: 0.92,
+                status: .monitoring,
+                measuredLatencyMS: 44,
+                failureRate: 0.1,
+                stabilityScore: 0.88,
+                recentChangeSummary: "Monitoring OpenAI on Stable Relay."
+            )
+        )
+
+        let assignments = await runner.evaluate(
+            subscription: subscription,
+            sourceURL: subscription.sourceURL,
+            snapshot: nil,
+            destinations: [RoutingDestination(slug: "openai", label: "OpenAI", ruleFamily: "ai", isFallback: false)],
+            previousAssignments: previousAssignments,
+            pinState: .none,
+            phase: .monitoring,
+            now: Date(timeIntervalSince1970: 2000)
+        )
+
+        XCTAssertEqual(assignments["openai"]?.assignedProviderID, "stable")
+        XCTAssertEqual(assignments["openai"]?.assignedProviderLabel, "Stable Relay")
+        XCTAssertEqual(assignments["openai"]?.status, .degraded)
+        XCTAssertEqual(assignments["openai"]?.holdReason, .monitoringUnavailable)
+        XCTAssertEqual(assignments["openai"]?.assignedAt, 1000)
+    }
+
+    func testNoRankedCandidatesPreservesPreviousAssignmentAsDegradedInsteadOfDroppingDestination() async {
+        let evaluator = StubRouteCandidateEvaluator(
+            evaluation: RouteCandidateEvaluation(
+                rankedCandidates: [],
+                selectedCandidate: nil,
+                degradationReason: "No valid route candidates were available for evaluation."
+            )
+        )
+        let runner = DestinationFastPassRunner(
+            routeCandidateEvaluator: evaluator,
+            environmentResolver: StaticEnvironmentContextResolver(environment: .wifiHome)
+        )
+        let subscription = SubscriptionConfig(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            proxies: [ClashProxy(name: "Stable Relay", type: "vmess")]
+        )
+        var previousAssignments = DestinationRoutingAssignments(
+            sourceURL: subscription.sourceURL.absoluteString,
+            selectedDestinationID: "openai"
+        )
+        previousAssignments.insert(
+            DestinationRoutingAssignment(
+                destinationID: "openai",
+                mode: .auto,
+                assignedProviderID: "stable",
+                assignedProviderLabel: "Stable Relay",
+                strategyName: "fallback-proxy",
+                source: .automaticSelection,
+                assignedAt: 1000,
+                freshness: 0.92,
+                status: .monitoring,
+                measuredLatencyMS: 44,
+                failureRate: 0.1,
+                stabilityScore: 0.88,
+                recentChangeSummary: "Monitoring OpenAI on Stable Relay."
+            )
+        )
+
+        let assignments = await runner.evaluate(
+            subscription: subscription,
+            sourceURL: subscription.sourceURL,
+            snapshot: nil,
+            destinations: [RoutingDestination(slug: "openai", label: "OpenAI", ruleFamily: "ai", isFallback: false)],
+            previousAssignments: previousAssignments,
+            pinState: .none,
+            phase: .monitoring,
+            now: Date(timeIntervalSince1970: 2000)
+        )
+
+        XCTAssertEqual(assignments.count, 1)
+        XCTAssertEqual(assignments["openai"]?.assignedProviderID, "stable")
+        XCTAssertEqual(assignments["openai"]?.status, .degraded)
+        XCTAssertEqual(assignments["openai"]?.holdReason, .monitoringUnavailable)
+        XCTAssertEqual(
+            assignments["openai"]?.recentChangeSummary,
+            "No valid route candidates were available for evaluation."
         )
     }
 }

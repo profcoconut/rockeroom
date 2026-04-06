@@ -84,14 +84,12 @@ public struct RouteSwitchPolicy: Sendable {
         phase: AdaptiveRoutingPhase,
         monitoringAvailable: Bool
     ) -> RouteSwitchDecision {
-        let selectedCurrentCandidate = currentCandidate ?? bestCandidate
-
         guard monitoringAvailable, let bestCandidate else {
             return .holdCurrent(
                 RouteHoldOutcome(
                     reason: .monitoringUnavailable,
                     currentAssignment: currentAssignment,
-                    selectedCandidate: selectedCurrentCandidate,
+                    selectedCandidate: currentCandidate,
                     runnerUpCandidate: runnerUpCandidate
                 )
             )
@@ -257,8 +255,21 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
                 evidence: evidence
             )
             let ranked = evaluation.rankedCandidates
-            guard let leading = ranked.first else { continue }
             let previous = previousAssignments?[destination.id]
+            guard let leading = ranked.first else {
+                if let previous {
+                    assignments.insert(
+                        preservedAssignment(
+                            previous: previous,
+                            currentCandidate: nil,
+                            runnerUpCandidate: nil,
+                            destinationLabel: destination.label,
+                            degradationReason: evaluation.degradationReason
+                        )
+                    )
+                }
+                continue
+            }
             let runnerUp = ranked.dropFirst().first
             let bestCandidate = evaluation.selectedCandidate ?? leading
             let currentCandidate = selectedHealth(for: previous, from: ranked)
@@ -334,6 +345,18 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
                         reason: outcome.reason
                     )
                 case .holdCurrent(let outcome):
+                    if outcome.reason == .monitoringUnavailable, let previous {
+                        assignments.insert(
+                            preservedAssignment(
+                                previous: previous,
+                                currentCandidate: currentCandidate,
+                                runnerUpCandidate: runnerUp,
+                                destinationLabel: destination.label,
+                                degradationReason: evaluation.degradationReason
+                            )
+                        )
+                        continue
+                    }
                     let heldRouteContext = outcome.selectedCandidate?.candidate.routeContext ?? outcome.currentAssignment?.routeContext ?? bestCandidate.candidate.routeContext
                     let heldProviderLabel = outcome.selectedCandidate?.candidate.providerLabel ?? outcome.currentAssignment?.assignedProviderLabel ?? bestCandidate.candidate.providerLabel
                     routeContext = heldRouteContext
@@ -394,6 +417,41 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
         }
 
         return assignments
+    }
+
+    private func preservedAssignment(
+        previous: DestinationRoutingAssignment,
+        currentCandidate: EvaluatedRouteCandidate?,
+        runnerUpCandidate: EvaluatedRouteCandidate?,
+        destinationLabel: String,
+        degradationReason: String?
+    ) -> DestinationRoutingAssignment {
+        let selectedRouteContext = currentCandidate?.candidate.routeContext ?? previous.routeContext
+        let selectedProviderLabel = currentCandidate?.candidate.providerLabel ?? previous.assignedProviderLabel
+
+        return DestinationRoutingAssignment(
+            routeContext: selectedRouteContext,
+            mode: previous.mode,
+            assignedProviderLabel: selectedProviderLabel,
+            source: previous.source,
+            assignedAt: previous.assignedAt,
+            evidenceLinkSnapshotID: previous.evidenceLinkSnapshotID,
+            freshness: currentCandidate?.freshness ?? previous.freshness,
+            status: .degraded,
+            holdReason: .monitoringUnavailable,
+            switchReason: nil,
+            measuredLatencyMS: currentCandidate?.latencyMS ?? previous.measuredLatencyMS,
+            failureRate: currentCandidate?.failureRate ?? previous.failureRate,
+            stabilityScore: currentCandidate?.stabilityScore ?? previous.stabilityScore,
+            recentChangeSummary: holdSummary(
+                destinationLabel: destinationLabel,
+                selectedProviderLabel: selectedProviderLabel,
+                reason: .monitoringUnavailable,
+                degradationReason: degradationReason
+            ),
+            alternativeProviderID: runnerUpCandidate?.candidate.routeContext.providerID,
+            alternativeProviderLabel: runnerUpCandidate?.candidate.providerLabel
+        )
     }
 
     private func selectedHealth(
