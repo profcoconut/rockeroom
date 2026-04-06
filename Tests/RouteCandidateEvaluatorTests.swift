@@ -425,6 +425,7 @@ final class RouteSwitchPolicyTests: XCTestCase {
 
         let decision = policy.decide(
             currentAssignment: currentAssignment,
+            currentCandidate: makeCandidate(providerID: "stable", latencyMS: 40, confidence: 0.93, freshness: 0.96, stabilityScore: 0.92),
             bestCandidate: bestCandidate,
             runnerUpCandidate: makeCandidate(providerID: "fast", latencyMS: 47, confidence: 0.9, freshness: 0.95, stabilityScore: 0.82),
             pinState: .none,
