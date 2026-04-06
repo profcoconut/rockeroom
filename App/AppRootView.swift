@@ -82,7 +82,9 @@ struct AppRootView: View {
         expertConsoleViewModel.refresh(
             snapshot: autoModeViewModel.snapshot,
             recommendationState: autoModeViewModel.recommendationState,
-            pinState: autoModeViewModel.pinState
+            pinState: autoModeViewModel.pinState,
+            destinationAssignments: autoModeViewModel.destinationAssignment,
+            monitoringStatusText: autoModeViewModel.monitoringStatusText
         )
     }
 

@@ -24,6 +24,8 @@
 		23E5551A0AFC84DD04C61CF9 /* claude.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 1D0A02F933324DD63F1FD9A3 /* claude.yaml */; };
 		254E4972FBB30D04C71BE847 /* LiveE2EWorkflowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770F004ABE515C5A3405F7B5 /* LiveE2EWorkflowTests.swift */; };
 		27EB8413733E822037E691EB /* AutoModeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A83292C5C6FC0561C285EE2B /* AutoModeViewModelTests.swift */; };
+		2A1F87A4C2B34D5E6F708192 /* RouteContextInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B2C18D5E6F7091A2B3C4D5E /* RouteContextInspectorView.swift */; };
+		2A1F87A5C2B34D5E6F708193 /* RouteChangeHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B2C18D6E6F7091A2B3C4D5F /* RouteChangeHistoryView.swift */; };
 		364D4875302A4B652844D775 /* SharedKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 31060422180F3E2DF3824EBB /* SharedKit.framework */; };
 		36F84BDCC5CDF77455C3DFF8 /* ExpertConsoleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCAFF29566414EF2222E19CA /* ExpertConsoleViewModel.swift */; };
 		4316AE50765A66C9BF764C6B /* RockeRoomApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97007BBC7B89C7A984E564D9 /* RockeRoomApp.swift */; };
@@ -57,6 +59,7 @@
 		8D165A1C2B78716F2D5C50A9 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFDDC818809C1E577238E51B /* AppRootView.swift */; };
 		8D25ADD72609D28B1218C08F /* RoutingOptimizationPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2716F3EDB5251AE48664779D /* RoutingOptimizationPolicyTests.swift */; };
 		8E708A0AA7CD55CFA2E38F30 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A0F7B74426FBE5F8F6CA2C /* TestSupport.swift */; };
+		8F3A6B7C8D9E0F1A2B3C4D5E /* ExpertConsoleViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4B5C6D7E8F901A2B3C4D5E /* ExpertConsoleViewModelTests.swift */; };
 		90256FEBBC38CAAEF325C2FA /* AppSessionRestoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1451EA88F12C8C7AC7D03923 /* AppSessionRestoreTests.swift */; };
 		90B806D00024620610D11DF1 /* ClashSubscriptionImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B59AF895234EB05AD9749F6 /* ClashSubscriptionImporter.swift */; };
 		93A38985AD42BC3413C7A636 /* PinStateStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62A27EFC06642CDDD88FC28E /* PinStateStoreTests.swift */; };
@@ -236,7 +239,10 @@
 		98D0C3D1A4A463BAD5D891F0 /* TunnelSessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelSessionStoreTests.swift; sourceTree = "<group>"; };
 		9AF313F7465C5BC55BB73A76 /* ClashSubscriptionImporterLiveFormatTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClashSubscriptionImporterLiveFormatTests.swift; sourceTree = "<group>"; };
 		9DAE4494AA77F6C83BD25632 /* ClashSubscriptionImporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClashSubscriptionImporterTests.swift; sourceTree = "<group>"; };
+		9A4B5C6D7E8F901A2B3C4D5E /* ExpertConsoleViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpertConsoleViewModelTests.swift; sourceTree = "<group>"; };
 		C94FE8D0E76D4C74B4E9578E /* NetworkEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkEnvironment.swift; sourceTree = "<group>"; };
+		3B2C18D5E6F7091A2B3C4D5E /* RouteContextInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteContextInspectorView.swift; sourceTree = "<group>"; };
+		3B2C18D6E6F7091A2B3C4D5F /* RouteChangeHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteChangeHistoryView.swift; sourceTree = "<group>"; };
 		A57BA70511A6137665D60F9E /* ExpertConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpertConsoleView.swift; sourceTree = "<group>"; };
 		A83292C5C6FC0561C285EE2B /* AutoModeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoModeViewModelTests.swift; sourceTree = "<group>"; };
 		A83FBBFF1040B82E0FF73F73 /* MarketplaceEvidenceProjectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceEvidenceProjectionTests.swift; sourceTree = "<group>"; };
@@ -359,6 +365,7 @@
 				0D300EB75BC4E77D78308F8D /* DestinationRoutingAssignmentStoreTests.swift */,
 				79C047358E6E421D5D041433 /* DestinationRoutingAssignmentTests.swift */,
 				B07E7C4A7BD03F62D6B79716 /* DestinationRoutingContractTests.swift */,
+				9A4B5C6D7E8F901A2B3C4D5E /* ExpertConsoleViewModelTests.swift */,
 				CCA13A6CE145C1A946CACA95 /* FreshnessRegressionTests.swift */,
 				DA42565B983A7A62427277C1 /* HomeSummaryMetricTests.swift */,
 				70277CA4F705B8B24176F02D /* LiveE2EScenarioTests.swift */,
@@ -416,6 +423,8 @@
 			children = (
 				A57BA70511A6137665D60F9E /* ExpertConsoleView.swift */,
 				CCAFF29566414EF2222E19CA /* ExpertConsoleViewModel.swift */,
+				3B2C18D5E6F7091A2B3C4D5E /* RouteContextInspectorView.swift */,
+				3B2C18D6E6F7091A2B3C4D5F /* RouteChangeHistoryView.swift */,
 			);
 			path = ExpertConsole;
 			sourceTree = "<group>";
@@ -726,6 +735,8 @@
 				7F34399396B42245F6AC1CA4 /* AutoModeViewModel.swift in Sources */,
 				499FB3B7B3F1A9727845A024 /* ExpertConsoleView.swift in Sources */,
 				36F84BDCC5CDF77455C3DFF8 /* ExpertConsoleViewModel.swift in Sources */,
+				2A1F87A4C2B34D5E6F708192 /* RouteContextInspectorView.swift in Sources */,
+				2A1F87A5C2B34D5E6F708193 /* RouteChangeHistoryView.swift in Sources */,
 				1EECE1FADA639C9BEBF9FD35 /* HomeView.swift in Sources */,
 				0C19A1E34ABAB3562E11376E /* LiveE2ERunner.swift in Sources */,
 				A732EE803770944EA470483E /* LiveE2EScenario.swift in Sources */,
@@ -771,6 +782,7 @@
 			files = (
 				90256FEBBC38CAAEF325C2FA /* AppSessionRestoreTests.swift in Sources */,
 				27EB8413733E822037E691EB /* AutoModeViewModelTests.swift in Sources */,
+				8F3A6B7C8D9E0F1A2B3C4D5E /* ExpertConsoleViewModelTests.swift in Sources */,
 				D5C0C3240ACCEE9468877F6E /* HomeSummaryMetricTests.swift in Sources */,
 				21C39DE71FD80D7114DA7A4F /* LiveE2EScenarioTests.swift in Sources */,
 				8E708A0AA7CD55CFA2E38F30 /* TestSupport.swift in Sources */,

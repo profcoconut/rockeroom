@@ -11,6 +11,8 @@ final class ManualPinFlowTests: XCTestCase {
         app.tabBars.buttons["Expert Console"].tap()
 
         XCTAssertTrue(app.navigationBars["Expert Console"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.otherElements["expertConsoleRouteContextSection"].exists)
+        XCTAssertTrue(app.otherElements["expertConsoleHistorySection"].exists)
         XCTAssertTrue(app.staticTexts["2. Stable Relay"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Pin Stable Relay"].exists)
     }
@@ -26,6 +28,9 @@ final class ManualPinFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["Pin Stable Relay"].waitForExistence(timeout: 5))
         app.buttons["Pin Stable Relay"].tap()
 
+        XCTAssertTrue(app.otherElements["expertConsoleControlSection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["expertConsoleControlStateBadge"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["expertConsoleControlStateBadge"].label, "Manual")
         XCTAssertTrue(app.staticTexts["Pinned"].waitForExistence(timeout: 5))
 
         app.tabBars.buttons["Home"].tap()
@@ -50,6 +55,8 @@ final class ManualPinFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["Pin Stable Relay"].waitForExistence(timeout: 5))
         app.buttons["Pin Stable Relay"].tap()
         XCTAssertTrue(app.buttons["Unpin Stable Relay"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["expertConsoleControlStateBadge"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["expertConsoleControlStateBadge"].label, "Manual")
         app.buttons["Unpin Stable Relay"].tap()
 
         app.tabBars.buttons["Home"].tap()

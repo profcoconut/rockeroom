@@ -75,7 +75,10 @@ final class LiveE2EWorkflowTests: XCTestCase {
 
         app.tabBars.buttons["Expert Console"].tap()
         XCTAssertTrue(app.navigationBars["Expert Console"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["Ranked candidates"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.otherElements["expertConsoleRouteContextSection"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.otherElements["expertConsoleControlSection"].exists)
+        XCTAssertTrue(app.otherElements["expertConsoleHistorySection"].exists)
+        XCTAssertTrue(app.staticTexts["Ranked candidates"].exists)
     }
 
     @MainActor
@@ -111,7 +114,10 @@ final class LiveE2EWorkflowTests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.navigationBars["Expert Console"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["Ranked candidates"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.otherElements["expertConsoleRouteContextSection"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.otherElements["expertConsoleControlSection"].exists)
+        XCTAssertTrue(app.otherElements["expertConsoleHistorySection"].exists)
+        XCTAssertTrue(app.otherElements["routeHistoryRow.openai"].exists)
         XCTAssertTrue(
             app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pin ")).firstMatch.waitForExistence(timeout: 8)
         )
@@ -254,7 +260,9 @@ final class LiveE2EWorkflowTests: XCTestCase {
         routingApp.launch()
 
         XCTAssertTrue(routingApp.staticTexts["Expert Console"].waitForExistence(timeout: 12))
-        XCTAssertTrue(routingApp.staticTexts["Ranked candidates"].waitForExistence(timeout: 8))
+        XCTAssertTrue(routingApp.otherElements["expertConsoleRouteContextSection"].waitForExistence(timeout: 8))
+        XCTAssertTrue(routingApp.otherElements["expertConsoleControlSection"].exists)
+        XCTAssertTrue(routingApp.otherElements["expertConsoleHistorySection"].exists)
         XCTAssertTrue(
             routingApp.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pin ")).firstMatch.waitForExistence(timeout: 8)
         )
