@@ -91,6 +91,7 @@ final class AutoModeViewModel: ObservableObject {
     private let monitoringInterval: TimeInterval
     private let now: @Sendable () -> Date
     private var subscriptionConfig: SubscriptionConfig?
+    private var isAppActive = false
     @Published private(set) var pinState: PinState = .none
     @Published private(set) var destinationAssignment: DestinationRoutingAssignments?
 
@@ -206,6 +207,7 @@ final class AutoModeViewModel: ObservableObject {
     }
 
     func handleAppDidBecomeActive() async {
+        isAppActive = true
         let rawSnapshot: ResultSnapshot?
         if let snapshot {
             rawSnapshot = snapshot
@@ -222,6 +224,7 @@ final class AutoModeViewModel: ObservableObject {
     }
 
     func handleAppDidEnterBackground() async {
+        isAppActive = false
         await stopForegroundMonitoring()
     }
 
@@ -801,6 +804,10 @@ final class AutoModeViewModel: ObservableObject {
 
     private func startForegroundMonitoring() async {
         guard monitoringInterval > 0, subscriptionConfig != nil, destinationAssignment?.isEmpty == false else { return }
+        guard isAppActive else {
+            adaptiveRoutingState = .standby
+            return
+        }
         adaptiveRoutingState = .monitoring
         await monitoringCoordinator.start(interval: monitoringInterval) { [weak self] in
             await self?.runForegroundMonitoringIteration()
