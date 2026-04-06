@@ -70,6 +70,52 @@ final class ExpertConsoleViewModelTests: XCTestCase {
         )
     }
 
+    func testStructuredHoldReasonDrivesConsoleCopyWithoutParsingSummaryText() {
+        let viewModel = ExpertConsoleViewModel()
+        var assignments = DestinationRoutingAssignments(
+            sourceURL: "https://example.com/sub",
+            selectedDestinationID: "openai"
+        )
+
+        assignments.insert(
+            DestinationRoutingAssignment(
+                routeContext: RouteContext(
+                    environment: .wifiHome,
+                    destinationID: "openai",
+                    providerID: "stable",
+                    strategy: .rule
+                ),
+                mode: .auto,
+                assignedProviderLabel: "Stable Relay",
+                source: .automaticSelection,
+                assignedAt: 2_000,
+                freshness: 0.92,
+                status: .holding,
+                holdReason: .staleEvidence,
+                measuredLatencyMS: 42,
+                failureRate: 0.2,
+                stabilityScore: 0.91,
+                recentChangeSummary: "Holding OpenAI on Stable Relay while Fast Relay is under review.",
+                alternativeProviderID: "fast",
+                alternativeProviderLabel: "Fast Relay"
+            )
+        )
+
+        viewModel.refresh(
+            snapshot: nil,
+            recommendationState: .idle,
+            pinState: .none,
+            destinationAssignments: assignments,
+            monitoringStatusText: "Foreground monitoring active"
+        )
+
+        XCTAssertEqual(viewModel.controlState.title, "Holding on stale evidence")
+        XCTAssertEqual(
+            viewModel.bestAlternative?.detailText,
+            "Fast Relay is a candidate, but the evidence is stale and needs a refresh."
+        )
+    }
+
     private func makeAssignmentsForConsoleState() -> DestinationRoutingAssignments {
         var assignments = DestinationRoutingAssignments(
             sourceURL: "https://example.com/sub",
@@ -90,6 +136,7 @@ final class ExpertConsoleViewModelTests: XCTestCase {
                 assignedAt: 2_000,
                 freshness: 0.92,
                 status: .holding,
+                holdReason: .weakConfidence,
                 measuredLatencyMS: 42,
                 failureRate: 0.2,
                 stabilityScore: 0.91,

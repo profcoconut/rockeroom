@@ -8,6 +8,7 @@ struct RouteContextInspectorView: View {
         if rows.isEmpty {
             Text("No route context yet. Run Benchmark to inspect the current environment, destination, provider, and strategy.")
                 .foregroundStyle(.secondary)
+                .accessibilityElement(children: .combine)
         } else {
             VStack(alignment: .leading, spacing: 12) {
                 if let summary {
@@ -40,6 +41,7 @@ struct RouteContextInspectorView: View {
                 }
             }
             .padding(.vertical, 6)
+            .accessibilityElement(children: .contain)
         }
     }
 

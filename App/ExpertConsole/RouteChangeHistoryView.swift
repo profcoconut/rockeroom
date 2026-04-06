@@ -8,6 +8,7 @@ struct RouteChangeHistoryView: View {
         if rows.isEmpty {
             Text(emptyText)
                 .foregroundStyle(.secondary)
+                .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("routeHistoryEmptyState")
         } else {
             VStack(spacing: 0) {
@@ -34,6 +35,7 @@ struct RouteChangeHistoryView: View {
                     .accessibilityIdentifier("routeHistoryRow.\(row.id)")
                 }
             }
+            .accessibilityElement(children: .contain)
         }
     }
 

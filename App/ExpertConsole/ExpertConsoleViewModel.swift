@@ -498,26 +498,29 @@ private extension ExpertConsoleViewModel {
     }
 
     func inferredHoldReason(for assignment: DestinationRoutingAssignment) -> InferredHoldReason {
-        let summary = assignment.recentChangeSummary?.lowercased() ?? ""
-
-        if isPinned(assignment) || summary.contains("pin") || summary.contains("manual") {
+        if isPinned(assignment) {
             return .pinnedRoute
         }
-        if summary.contains("confidence") {
-            return .weakConfidence
+
+        if let holdReason = assignment.holdReason {
+            switch holdReason {
+            case .pinnedRoute:
+                return .pinnedRoute
+            case .insignificantGain:
+                return .insignificantGain
+            case .weakConfidence:
+                return .weakConfidence
+            case .staleEvidence:
+                return .staleEvidence
+            case .weakStability:
+                return .weakStability
+            case .noViableBetterCandidate:
+                return .noViableBetterCandidate
+            case .monitoringUnavailable:
+                return .monitoringUnavailable
+            }
         }
-        if summary.contains("stale") || summary.contains("refresh") {
-            return .staleEvidence
-        }
-        if summary.contains("stability") || summary.contains("stable") {
-            return .weakStability
-        }
-        if summary.contains("monitoring") && summary.contains("limited") {
-            return .monitoringUnavailable
-        }
-        if summary.contains("gain") || summary.contains("small") {
-            return .insignificantGain
-        }
+
         return .noViableBetterCandidate
     }
 }

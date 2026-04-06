@@ -23,17 +23,20 @@ struct ExpertConsoleView: View {
                     summary: viewModel.routeContextSummary,
                     rows: viewModel.routeContextRows
                 )
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("expertConsoleRouteContextSection")
             }
 
             Section("Control state") {
                 controlStateView(viewModel.controlState)
+                    .accessibilityElement(children: .contain)
                     .accessibilityIdentifier("expertConsoleControlSection")
             }
 
             Section("Best visible alternative") {
                 if let alternative = viewModel.bestAlternative {
                     alternativeView(alternative)
+                        .accessibilityElement(children: .contain)
                         .accessibilityIdentifier("expertConsoleAlternativeSection")
                 } else {
                     Text("No clear alternative is visible yet for the selected route context.")
@@ -46,6 +49,7 @@ struct ExpertConsoleView: View {
                     rows: viewModel.routeChangeHistoryRows,
                     emptyText: viewModel.routeChangeHistoryEmptyText
                 )
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("expertConsoleHistorySection")
             }
 
@@ -70,6 +74,7 @@ struct ExpertConsoleView: View {
                             candidateRow(candidate)
                         }
                     }
+                    .accessibilityElement(children: .contain)
                     .accessibilityIdentifier("expertConsoleCandidateList")
                 }
             }

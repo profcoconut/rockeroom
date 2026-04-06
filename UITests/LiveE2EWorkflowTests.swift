@@ -77,7 +77,7 @@ final class LiveE2EWorkflowTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Expert Console"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.otherElements["expertConsoleRouteContextSection"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.otherElements["expertConsoleControlSection"].exists)
-        XCTAssertTrue(app.otherElements["expertConsoleHistorySection"].exists)
+        XCTAssertTrue(expertConsoleHistoryIsVisible(in: app))
         XCTAssertTrue(app.staticTexts["Ranked candidates"].exists)
     }
 
@@ -116,7 +116,7 @@ final class LiveE2EWorkflowTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Expert Console"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.otherElements["expertConsoleRouteContextSection"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.otherElements["expertConsoleControlSection"].exists)
-        XCTAssertTrue(app.otherElements["expertConsoleHistorySection"].exists)
+        XCTAssertTrue(expertConsoleHistoryIsVisible(in: app))
         XCTAssertTrue(app.otherElements["routeHistoryRow.openai"].exists)
         XCTAssertTrue(
             app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pin ")).firstMatch.waitForExistence(timeout: 8)
@@ -262,7 +262,7 @@ final class LiveE2EWorkflowTests: XCTestCase {
         XCTAssertTrue(routingApp.staticTexts["Expert Console"].waitForExistence(timeout: 12))
         XCTAssertTrue(routingApp.otherElements["expertConsoleRouteContextSection"].waitForExistence(timeout: 8))
         XCTAssertTrue(routingApp.otherElements["expertConsoleControlSection"].exists)
-        XCTAssertTrue(routingApp.otherElements["expertConsoleHistorySection"].exists)
+        XCTAssertTrue(expertConsoleHistoryIsVisible(in: routingApp))
         XCTAssertTrue(
             routingApp.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Pin ")).firstMatch.waitForExistence(timeout: 8)
         )
@@ -375,6 +375,29 @@ final class LiveE2EWorkflowTests: XCTestCase {
     private func assertBenchmarkedConsoleState(in app: XCUIApplication, timeout: TimeInterval = 8) {
         XCTAssertTrue(app.navigationBars["Expert Console"].waitForExistence(timeout: timeout))
         XCTAssertTrue(app.staticTexts["Ranked candidates"].waitForExistence(timeout: timeout))
+    }
+
+    @MainActor
+    private func expertConsoleHistoryIsVisible(in app: XCUIApplication) -> Bool {
+        scrollToElement(app.otherElements["routeHistoryRow.openai"], in: app)
+            || scrollToElement(app.staticTexts["routeHistoryEmptyState"], in: app)
+    }
+
+    @discardableResult
+    @MainActor
+    private func scrollToElement(_ element: XCUIElement, in app: XCUIApplication, maxSwipes: Int = 6) -> Bool {
+        if element.waitForExistence(timeout: 2) {
+            return true
+        }
+
+        for _ in 0..<maxSwipes {
+            app.swipeUp()
+            if element.waitForExistence(timeout: 1) {
+                return true
+            }
+        }
+
+        return element.exists
     }
 
     private func liveSubscriptionPayloadBase64() throws -> String {

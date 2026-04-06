@@ -35,6 +35,14 @@ struct AppRootView: View {
             syncExpertConsole()
             advanceLiveE2E()
         }
+        .onChange(of: autoModeViewModel.destinationAssignment) { _, _ in
+            syncExpertConsole()
+            advanceLiveE2E()
+        }
+        .onChange(of: autoModeViewModel.monitoringStatusText) { _, _ in
+            syncExpertConsole()
+            advanceLiveE2E()
+        }
         .onChange(of: autoModeViewModel.status) { _, _ in
             advanceLiveE2E()
         }
