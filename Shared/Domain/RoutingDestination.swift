@@ -99,6 +99,8 @@ public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
     /// context even if the linked snapshot has since been superseded.
     public let freshness: Double?
     public let status: DestinationAssignmentStatus?
+    public let holdReason: RouteHoldReason?
+    public let switchReason: RouteSwitchReason?
     public let measuredLatencyMS: Double?
     public let failureRate: Double?
     public let stabilityScore: Double?
@@ -119,6 +121,8 @@ public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
         evidenceLinkSnapshotID: String? = nil,
         freshness: Double? = nil,
         status: DestinationAssignmentStatus? = nil,
+        holdReason: RouteHoldReason? = nil,
+        switchReason: RouteSwitchReason? = nil,
         measuredLatencyMS: Double? = nil,
         failureRate: Double? = nil,
         stabilityScore: Double? = nil,
@@ -134,6 +138,8 @@ public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
         self.evidenceLinkSnapshotID = evidenceLinkSnapshotID
         self.freshness = freshness
         self.status = status
+        self.holdReason = holdReason
+        self.switchReason = switchReason
         self.measuredLatencyMS = measuredLatencyMS
         self.failureRate = failureRate
         self.stabilityScore = stabilityScore
@@ -154,6 +160,8 @@ public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
         evidenceLinkSnapshotID: String? = nil,
         freshness: Double? = nil,
         status: DestinationAssignmentStatus? = nil,
+        holdReason: RouteHoldReason? = nil,
+        switchReason: RouteSwitchReason? = nil,
         measuredLatencyMS: Double? = nil,
         failureRate: Double? = nil,
         stabilityScore: Double? = nil,
@@ -175,6 +183,8 @@ public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
             evidenceLinkSnapshotID: evidenceLinkSnapshotID,
             freshness: freshness,
             status: status,
+            holdReason: holdReason,
+            switchReason: switchReason,
             measuredLatencyMS: measuredLatencyMS,
             failureRate: failureRate,
             stabilityScore: stabilityScore,
@@ -193,6 +203,8 @@ public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
         case evidenceLinkSnapshotID
         case freshness
         case status
+        case holdReason
+        case switchReason
         case measuredLatencyMS
         case failureRate
         case stabilityScore
@@ -228,6 +240,8 @@ public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
         evidenceLinkSnapshotID = try container.decodeIfPresent(String.self, forKey: .evidenceLinkSnapshotID)
         freshness = try container.decodeIfPresent(Double.self, forKey: .freshness)
         status = try container.decodeIfPresent(DestinationAssignmentStatus.self, forKey: .status)
+        holdReason = try container.decodeIfPresent(RouteHoldReason.self, forKey: .holdReason)
+        switchReason = try container.decodeIfPresent(RouteSwitchReason.self, forKey: .switchReason)
         measuredLatencyMS = try container.decodeIfPresent(Double.self, forKey: .measuredLatencyMS)
         failureRate = try container.decodeIfPresent(Double.self, forKey: .failureRate)
         stabilityScore = try container.decodeIfPresent(Double.self, forKey: .stabilityScore)
@@ -246,6 +260,8 @@ public struct DestinationRoutingAssignment: Codable, Equatable, Sendable {
         try container.encodeIfPresent(evidenceLinkSnapshotID, forKey: .evidenceLinkSnapshotID)
         try container.encodeIfPresent(freshness, forKey: .freshness)
         try container.encodeIfPresent(status, forKey: .status)
+        try container.encodeIfPresent(holdReason, forKey: .holdReason)
+        try container.encodeIfPresent(switchReason, forKey: .switchReason)
         try container.encodeIfPresent(measuredLatencyMS, forKey: .measuredLatencyMS)
         try container.encodeIfPresent(failureRate, forKey: .failureRate)
         try container.encodeIfPresent(stabilityScore, forKey: .stabilityScore)

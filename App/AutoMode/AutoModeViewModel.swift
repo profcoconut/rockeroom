@@ -14,11 +14,48 @@ struct AutoModeRuntimeProfile {
     let runner: ProbeRunner
 }
 
+actor AdaptiveMonitoringCoordinator {
+    typealias Sleep = @Sendable (TimeInterval) async throws -> Void
+    typealias Iteration = @Sendable () async -> Void
+
+    private let sleep: Sleep
+    private var task: Task<Void, Never>?
+
+    init(
+        sleep: @escaping Sleep = { interval in
+            try await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+        }
+    ) {
+        self.sleep = sleep
+    }
+
+    func start(
+        interval: TimeInterval,
+        iteration: @escaping Iteration
+    ) {
+        guard interval > 0 else { return }
+        stop()
+        task = Task {
+            while !Task.isCancelled {
+                try? await sleep(interval)
+                if Task.isCancelled { break }
+                await iteration()
+            }
+        }
+    }
+
+    func stop() {
+        task?.cancel()
+        task = nil
+    }
+}
+
 @MainActor
 final class AutoModeViewModel: ObservableObject {
     enum AdaptiveRoutingState: Equatable {
         case inactive
         case fastPass
+        case standby
         case monitoring
         case degraded(String)
     }
@@ -49,11 +86,11 @@ final class AutoModeViewModel: ObservableObject {
     private let pinStateStore: PinStateStore
     private let destinationAssignmentStore: DestinationRoutingAssignmentStore
     private let destinationRoutingEvaluator: any DestinationRoutingEvaluating
+    private let monitoringCoordinator: AdaptiveMonitoringCoordinator
     private let routingDestinations: [RoutingDestination]
     private let monitoringInterval: TimeInterval
     private let now: @Sendable () -> Date
     private var subscriptionConfig: SubscriptionConfig?
-    private var monitoringTask: Task<Void, Never>?
     @Published private(set) var pinState: PinState = .none
     @Published private(set) var destinationAssignment: DestinationRoutingAssignments?
 
@@ -88,6 +125,7 @@ final class AutoModeViewModel: ObservableObject {
         pinStateStore: PinStateStore = PinStateStore(),
         destinationAssignmentStore: DestinationRoutingAssignmentStore = DestinationRoutingAssignmentStore(),
         destinationRoutingEvaluator: any DestinationRoutingEvaluating = DestinationFastPassRunner(),
+        monitoringCoordinator: AdaptiveMonitoringCoordinator = AdaptiveMonitoringCoordinator(),
         routingDestinations: [RoutingDestination] = RoutingDestination.v1Catalog,
         monitoringInterval: TimeInterval = 8,
         now: @escaping @Sendable () -> Date = Date.init
@@ -97,6 +135,7 @@ final class AutoModeViewModel: ObservableObject {
         self.pinStateStore = pinStateStore
         self.destinationAssignmentStore = destinationAssignmentStore
         self.destinationRoutingEvaluator = destinationRoutingEvaluator
+        self.monitoringCoordinator = monitoringCoordinator
         self.routingDestinations = routingDestinations
         self.monitoringInterval = monitoringInterval
         let resolvedRuntime = runtimeProfile ?? AutoModeRuntimeProfile(
@@ -132,7 +171,7 @@ final class AutoModeViewModel: ObservableObject {
         status = .idle
         destinationAssignment = nil
         adaptiveRoutingState = .inactive
-        stopForegroundMonitoring()
+        await stopForegroundMonitoring()
     }
 
     /// Seeds destination assignment state for E2E harness purposes.
@@ -159,7 +198,7 @@ final class AutoModeViewModel: ObservableObject {
         applyRefreshAssessment(rawSnapshot: storedSnapshot, trigger: .restore)
         applyStatusForCurrentState()
         if destinationAssignment?.isEmpty == false {
-            adaptiveRoutingState = .monitoring
+            adaptiveRoutingState = .standby
         } else {
             adaptiveRoutingState = .inactive
         }
@@ -176,12 +215,14 @@ final class AutoModeViewModel: ObservableObject {
         applyRefreshAssessment(rawSnapshot: rawSnapshot, trigger: .foreground)
         applyStatusForCurrentState()
         if hasImportedSubscription, destinationAssignment?.isEmpty == false {
-            startForegroundMonitoring()
+            await startForegroundMonitoring()
+        } else if destinationAssignment?.isEmpty == false {
+            adaptiveRoutingState = .standby
         }
     }
 
-    func handleAppDidEnterBackground() {
-        stopForegroundMonitoring()
+    func handleAppDidEnterBackground() async {
+        await stopForegroundMonitoring()
     }
 
     func importSubscriptionLink(_ link: String) {
@@ -228,8 +269,7 @@ final class AutoModeViewModel: ObservableObject {
                 await destinationAssignmentStore.save(newAssignments)
                 destinationAssignment = newAssignments
                 applyRefreshAssessment(rawSnapshot: newSnapshot, trigger: .explicit)
-                adaptiveRoutingState = .monitoring
-                startForegroundMonitoring()
+                await startForegroundMonitoring()
                 status = .running
             } catch {
                 let message = error.localizedDescription
@@ -285,6 +325,7 @@ final class AutoModeViewModel: ObservableObject {
         tunnelStatus = ClashAdapterStatus()
         status = .idle
         adaptiveRoutingState = .inactive
+        await stopForegroundMonitoring()
         hasRestoredSession = true
     }
 
@@ -521,6 +562,8 @@ final class AutoModeViewModel: ObservableObject {
             return "Monitoring inactive"
         case .fastPass:
             return "Running fast pass"
+        case .standby:
+            return "Monitoring available in foreground"
         case .monitoring:
             return "Foreground monitoring active"
         case .degraded:
@@ -722,7 +765,7 @@ final class AutoModeViewModel: ObservableObject {
                 await destinationAssignmentStore.clear()
                 destinationAssignment = nil
                 adaptiveRoutingState = .inactive
-                stopForegroundMonitoring()
+                await stopForegroundMonitoring()
                 status = .ready
             } catch {
                 status = .failed(message: error.localizedDescription)
@@ -756,21 +799,17 @@ final class AutoModeViewModel: ObservableObject {
         )
     }
 
-    private func startForegroundMonitoring() {
-        guard monitoringInterval > 0, adaptiveRoutingState == .monitoring, subscriptionConfig != nil else { return }
-        monitoringTask?.cancel()
-        monitoringTask = Task { [monitoringInterval] in
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: UInt64(monitoringInterval * 1_000_000_000))
-                if Task.isCancelled { break }
-                await runForegroundMonitoringIteration()
-            }
+    private func startForegroundMonitoring() async {
+        guard monitoringInterval > 0, subscriptionConfig != nil, destinationAssignment?.isEmpty == false else { return }
+        adaptiveRoutingState = .monitoring
+        await monitoringCoordinator.start(interval: monitoringInterval) { [weak self] in
+            await self?.runForegroundMonitoringIteration()
         }
     }
 
-    private func stopForegroundMonitoring() {
-        monitoringTask?.cancel()
-        monitoringTask = nil
+    private func stopForegroundMonitoring() async {
+        await monitoringCoordinator.stop()
+        adaptiveRoutingState = destinationAssignment?.isEmpty == false ? .standby : .inactive
     }
 
     private func runForegroundMonitoringIteration() async {

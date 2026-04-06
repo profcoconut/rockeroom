@@ -177,6 +177,7 @@ flowchart TB
 
 ### Sprint 4
 - Expert Console dashboard maturation and manual control semantics
+- Implemented console contract now includes a route-context inspector, explicit control-state explanation, best-visible-alternative copy, and lightweight recent-routing history tied to the shared assignment model
 
 ### Sprint 5
 - Home summary polish, route-history explanation, and full validation hardening
@@ -282,7 +283,7 @@ which combination is best now, should RockeRoom switch to it, and how should tha
 - The optimizer can compare route candidates in a way that is compatible with the product's route-context model.
 - Sprint 2 keeps candidate comparison in shared engine code via `RouteCandidateEvaluator`.
 
-- [ ] **Unit 3: Sprint 3 - Auto Mode monitoring and stable switching**
+- [x] **Unit 3: Sprint 3 - Auto Mode monitoring and stable switching**
 
 **Goal:** Make `Auto Mode` behave like a real optimizer that can monitor, reassess, and switch while the app stays active, without route churn or hidden behavior.
 
@@ -323,8 +324,9 @@ which combination is best now, should RockeRoom switch to it, and how should tha
 
 **Verification:**
 - `Auto Mode` behaves like a bounded, foreground optimizer rather than a one-shot measurement screen.
+- The shipped implementation keeps switch policy and monitoring cadence explicit, persists hold or switch reasons on assignments, and restores into foreground-available monitoring rather than implying background execution.
 
-- [ ] **Unit 4: Sprint 4 - Expert Console dashboard and manual control model**
+- [x] **Unit 4: Sprint 4 - Expert Console dashboard and manual control model**
 
 **Goal:** Turn `Expert Console` into the power-user dashboard that explains route context, current route, alternatives, and control state without creating a second engine.
 
@@ -346,6 +348,7 @@ which combination is best now, should RockeRoom switch to it, and how should tha
 - Add visible switch and hold reasoning plus lightweight history so users can understand why RockeRoom acted or stayed put.
 - Keep manual controls scoped to the same shared truth layer used by `Auto Mode`.
 - Avoid trying to mirror raw config syntax or giant rule sets; the dashboard should stay evidence-first and product-legible.
+- Use the selected shared assignment as the console truth spine and derive lightweight recent-routing history from current assignment summaries until deeper persistence is needed.
 
 **Patterns to follow:**
 - Follow the existing split where `AppRootView` coordinates shared state between `Home` and `Expert Console`.

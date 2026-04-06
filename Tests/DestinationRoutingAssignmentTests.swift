@@ -261,13 +261,22 @@ final class DestinationRoutingAssignmentTests: XCTestCase {
             source: .automaticSelection,
             assignedAt: 2000,
             evidenceLinkSnapshotID: "snap-001",
-            freshness: 0.92
+            freshness: 0.92,
+            status: .holding,
+            holdReason: .insignificantGain,
+            measuredLatencyMS: 84,
+            failureRate: 1.2,
+            stabilityScore: 0.78,
+            recentChangeSummary: "Holding Claude on Singapore 01 because the gain is too small.",
+            alternativeProviderID: "jp-01",
+            alternativeProviderLabel: "Japan 01"
         )
 
         let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(DestinationRoutingAssignment.self, from: data)
 
         XCTAssertEqual(decoded, original)
+        XCTAssertEqual(decoded.holdReason, .insignificantGain)
     }
 
     func testFinalDestinationAssignmentHasStableIdentity() {
