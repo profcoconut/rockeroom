@@ -28,7 +28,9 @@ struct RockeRoomApp: App {
                 expertConsoleViewModel.refresh(
                     snapshot: autoModeViewModel.snapshot,
                     recommendationState: autoModeViewModel.recommendationState,
-                    pinState: autoModeViewModel.pinState
+                    pinState: autoModeViewModel.pinState,
+                    destinationAssignments: autoModeViewModel.destinationAssignment,
+                    monitoringStatusText: autoModeViewModel.monitoringStatusText
                 )
             }
             .onChange(of: scenePhase) { newPhase in
@@ -41,7 +43,9 @@ struct RockeRoomApp: App {
                     expertConsoleViewModel.refresh(
                         snapshot: autoModeViewModel.snapshot,
                         recommendationState: autoModeViewModel.recommendationState,
-                        pinState: autoModeViewModel.pinState
+                        pinState: autoModeViewModel.pinState,
+                        destinationAssignments: autoModeViewModel.destinationAssignment,
+                        monitoringStatusText: autoModeViewModel.monitoringStatusText
                     )
                 }
             }

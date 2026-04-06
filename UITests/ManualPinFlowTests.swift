@@ -11,8 +11,9 @@ final class ManualPinFlowTests: XCTestCase {
         app.tabBars.buttons["Expert Console"].tap()
 
         XCTAssertTrue(app.navigationBars["Expert Console"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["2. Stable Relay"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Pin Stable Relay"].exists)
+        XCTAssertTrue(app.otherElements["expertConsoleRouteContextSection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(expertConsoleHistoryIsVisible(in: app))
+        XCTAssertTrue(scrollToElement(app.buttons["pinCandidateButton.stable-relay"], in: app))
     }
 
     @MainActor
@@ -23,9 +24,12 @@ final class ManualPinFlowTests: XCTestCase {
         importAndBenchmark(in: app)
 
         app.tabBars.buttons["Expert Console"].tap()
-        XCTAssertTrue(app.buttons["Pin Stable Relay"].waitForExistence(timeout: 5))
-        app.buttons["Pin Stable Relay"].tap()
+        XCTAssertTrue(scrollToElement(app.buttons["pinCandidateButton.stable-relay"], in: app))
+        app.buttons["pinCandidateButton.stable-relay"].tap()
 
+        XCTAssertTrue(app.otherElements["expertConsoleControlSection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["expertConsoleControlStateBadge"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["expertConsoleControlStateBadge"].label, "Manual")
         XCTAssertTrue(app.staticTexts["Pinned"].waitForExistence(timeout: 5))
 
         app.tabBars.buttons["Home"].tap()
@@ -47,10 +51,12 @@ final class ManualPinFlowTests: XCTestCase {
         importAndBenchmark(in: app)
 
         app.tabBars.buttons["Expert Console"].tap()
-        XCTAssertTrue(app.buttons["Pin Stable Relay"].waitForExistence(timeout: 5))
-        app.buttons["Pin Stable Relay"].tap()
-        XCTAssertTrue(app.buttons["Unpin Stable Relay"].waitForExistence(timeout: 5))
-        app.buttons["Unpin Stable Relay"].tap()
+        XCTAssertTrue(scrollToElement(app.buttons["pinCandidateButton.stable-relay"], in: app))
+        app.buttons["pinCandidateButton.stable-relay"].tap()
+        XCTAssertTrue(app.buttons["unpinCandidateButton.stable-relay"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["expertConsoleControlStateBadge"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["expertConsoleControlStateBadge"].label, "Manual")
+        app.buttons["unpinCandidateButton.stable-relay"].tap()
 
         app.tabBars.buttons["Home"].tap()
 
@@ -79,5 +85,28 @@ final class ManualPinFlowTests: XCTestCase {
         app.buttons["benchmarkButton"].tap()
 
         XCTAssertTrue(app.staticTexts["Recommended setup"].waitForExistence(timeout: 5))
+    }
+
+    @discardableResult
+    @MainActor
+    private func scrollToElement(_ element: XCUIElement, in app: XCUIApplication, maxSwipes: Int = 6) -> Bool {
+        if element.waitForExistence(timeout: 2) {
+            return true
+        }
+
+        for _ in 0..<maxSwipes {
+            app.swipeUp()
+            if element.waitForExistence(timeout: 1) {
+                return true
+            }
+        }
+
+        return element.exists
+    }
+
+    @MainActor
+    private func expertConsoleHistoryIsVisible(in app: XCUIApplication) -> Bool {
+        scrollToElement(app.otherElements["routeHistoryRow.openai"], in: app)
+            || scrollToElement(app.staticTexts["routeHistoryEmptyState"], in: app)
     }
 }
