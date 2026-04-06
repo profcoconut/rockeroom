@@ -696,6 +696,7 @@ final class AutoModeViewModelTests: XCTestCase {
         )
 
         await viewModel.restoreState()
+        await viewModel.handleAppDidBecomeActive()
         viewModel.optimize()
         try? await Task.sleep(nanoseconds: 80_000_000)
 
@@ -744,7 +745,7 @@ final class AutoModeViewModelTests: XCTestCase {
                 measuredLatencyMS: 32,
                 failureRate: 0.2,
                 stabilityScore: 0.9,
-                recentChangeSummary: "Switched OpenAI to Fast Relay for lower latency and healthier routing.",
+                recentChangeSummary: "Switched OpenAI to Fast Relay because the measured gain is now clearly meaningful.",
                 alternativeProviderID: "Stable Relay",
                 alternativeProviderLabel: "Stable Relay"
             )
@@ -773,6 +774,7 @@ final class AutoModeViewModelTests: XCTestCase {
         )
 
         await viewModel.restoreState()
+        await viewModel.handleAppDidBecomeActive()
         viewModel.optimize()
         try? await Task.sleep(nanoseconds: 160_000_000)
 
@@ -781,8 +783,138 @@ final class AutoModeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.destinationAssignment?["openai"]?.routeContext.environment, .unknown)
         XCTAssertEqual(
             viewModel.destinationAssignment?["openai"]?.recentChangeSummary,
-            "Switched OpenAI to Fast Relay for lower latency and healthier routing."
+            "Switched OpenAI to Fast Relay because the measured gain is now clearly meaningful."
         )
+    }
+
+    func testOptimizeLeavesMonitoringOnStandbyUntilAppBecomesActive() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+        let assignmentStore = DestinationRoutingAssignmentStore(store: dataStore)
+        let config = SubscriptionConfig(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            subscriptionName: "Primary",
+            proxies: [
+                ClashProxy(name: "Fast Relay", type: "ss"),
+                ClashProxy(name: "Stable Relay", type: "vmess")
+            ]
+        )
+        try await repository.save(link: "https://example.com/sub", config: config)
+
+        let initialAssignments = makeDestinationAssignments(providerByDestination: ["openai": "Stable Relay"])
+        let switchedAssignments = makeDestinationAssignments(providerByDestination: ["openai": "Fast Relay"])
+        let evaluator = TestSequencedDestinationRoutingEvaluator(
+            evaluations: [initialAssignments, switchedAssignments]
+        )
+
+        let viewModel = AutoModeViewModel(
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.running),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor()),
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore,
+            destinationAssignmentStore: assignmentStore,
+            destinationRoutingEvaluator: evaluator,
+            monitoringInterval: 0.05
+        )
+
+        await viewModel.restoreState()
+        viewModel.optimize()
+        try? await Task.sleep(nanoseconds: 160_000_000)
+
+        XCTAssertEqual(viewModel.adaptiveRoutingState, .standby)
+        XCTAssertEqual(viewModel.monitoringStatusText, "Monitoring available in foreground")
+        XCTAssertEqual(viewModel.destinationAssignment?["openai"]?.assignedProviderLabel, "Stable Relay")
+    }
+
+    func testRestoreKeepsMonitoringAvailableWithoutPretendingLoopIsAlreadyRunning() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+        let assignmentStore = DestinationRoutingAssignmentStore(store: dataStore)
+        let config = SubscriptionConfig(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            subscriptionName: "Primary",
+            proxies: [ClashProxy(name: "Fast Relay", type: "ss")]
+        )
+        try await repository.save(link: "https://example.com/sub", config: config)
+        await assignmentStore.save(makeDestinationAssignments(providerByDestination: ["openai": "Fast Relay"]))
+
+        let viewModel = AutoModeViewModel(
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.stopped),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor()),
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore,
+            destinationAssignmentStore: assignmentStore
+        )
+
+        await viewModel.restoreState()
+
+        XCTAssertEqual(viewModel.adaptiveRoutingState, .standby)
+        XCTAssertEqual(viewModel.monitoringStatusText, "Monitoring available in foreground")
+    }
+
+    func testBackgroundStopsMonitoringAndForegroundResumesWhenAssignmentsExist() async throws {
+        let dataStore = InMemoryDataStore()
+        let repository = SubscriptionRepository(store: dataStore)
+        let sessionStore = TunnelSessionStore(store: dataStore)
+        let snapshotStore = ResultSnapshotStore(store: dataStore)
+        let pinStateStore = PinStateStore(store: dataStore)
+        let assignmentStore = DestinationRoutingAssignmentStore(store: dataStore)
+        let config = SubscriptionConfig(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            subscriptionName: "Primary",
+            proxies: [ClashProxy(name: "Fast Relay", type: "ss")]
+        )
+        try await repository.save(link: "https://example.com/sub", config: config)
+        await assignmentStore.save(makeDestinationAssignments(providerByDestination: ["openai": "Fast Relay"]))
+
+        let viewModel = AutoModeViewModel(
+            importer: ClashSubscriptionImporter(fetcher: TestStubFetcher(data: Data())),
+            adapter: ClashAdapter(
+                engine: TunnelManagerClashEngine(
+                    tunnelManager: TestStubTunnelManager(statusAfterStart: ClashAdapterStatus.State.running),
+                    sessionStore: sessionStore
+                )
+            ),
+            runner: ProbeRunner(executor: TestStubProbeExecutor()),
+            snapshotStore: snapshotStore,
+            subscriptionRepository: repository,
+            tunnelSessionStore: sessionStore,
+            pinStateStore: pinStateStore,
+            destinationAssignmentStore: assignmentStore,
+            monitoringInterval: 0.05
+        )
+
+        await viewModel.restoreState()
+        await viewModel.handleAppDidBecomeActive()
+        XCTAssertEqual(viewModel.adaptiveRoutingState, .monitoring)
+
+        await viewModel.handleAppDidEnterBackground()
+        XCTAssertEqual(viewModel.adaptiveRoutingState, .standby)
+
+        await viewModel.handleAppDidBecomeActive()
+        XCTAssertEqual(viewModel.adaptiveRoutingState, .monitoring)
     }
 
     func testOptimizeCanProduceDifferentAssignmentsForDifferentEnvironmentResolvers() async throws {

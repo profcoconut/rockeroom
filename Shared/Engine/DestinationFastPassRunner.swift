@@ -1,5 +1,190 @@
 import Foundation
 
+public enum RouteSwitchReason: String, Codable, Equatable, Sendable {
+    case meaningfulGain
+}
+
+public enum RouteHoldReason: String, Codable, Equatable, Sendable {
+    case pinnedRoute
+    case insignificantGain
+    case weakConfidence
+    case staleEvidence
+    case weakStability
+    case noViableBetterCandidate
+    case monitoringUnavailable
+}
+
+public enum RouteSwitchDecision: Equatable, Sendable {
+    case switchRoute(RouteSwitchOutcome)
+    case holdCurrent(RouteHoldOutcome)
+}
+
+public struct RouteSwitchOutcome: Equatable, Sendable {
+    public let reason: RouteSwitchReason
+    public let previousAssignment: DestinationRoutingAssignment?
+    public let selectedCandidate: EvaluatedRouteCandidate
+    public let runnerUpCandidate: EvaluatedRouteCandidate?
+
+    public init(
+        reason: RouteSwitchReason,
+        previousAssignment: DestinationRoutingAssignment?,
+        selectedCandidate: EvaluatedRouteCandidate,
+        runnerUpCandidate: EvaluatedRouteCandidate?
+    ) {
+        self.reason = reason
+        self.previousAssignment = previousAssignment
+        self.selectedCandidate = selectedCandidate
+        self.runnerUpCandidate = runnerUpCandidate
+    }
+}
+
+public struct RouteHoldOutcome: Equatable, Sendable {
+    public let reason: RouteHoldReason
+    public let currentAssignment: DestinationRoutingAssignment?
+    public let selectedCandidate: EvaluatedRouteCandidate?
+    public let runnerUpCandidate: EvaluatedRouteCandidate?
+
+    public init(
+        reason: RouteHoldReason,
+        currentAssignment: DestinationRoutingAssignment?,
+        selectedCandidate: EvaluatedRouteCandidate?,
+        runnerUpCandidate: EvaluatedRouteCandidate?
+    ) {
+        self.reason = reason
+        self.currentAssignment = currentAssignment
+        self.selectedCandidate = selectedCandidate
+        self.runnerUpCandidate = runnerUpCandidate
+    }
+}
+
+public struct RouteSwitchPolicy: Sendable {
+    public var switchThresholdMS: Double
+    public var minimumStability: Double
+    public var minimumConfidence: Double
+    public var staleFreshnessThreshold: Double
+
+    public init(
+        switchThresholdMS: Double = 8,
+        minimumStability: Double = 0.62,
+        minimumConfidence: Double = 0.65,
+        staleFreshnessThreshold: Double = 0.5
+    ) {
+        self.switchThresholdMS = switchThresholdMS
+        self.minimumStability = minimumStability
+        self.minimumConfidence = minimumConfidence
+        self.staleFreshnessThreshold = staleFreshnessThreshold
+    }
+
+    public func decide(
+        currentAssignment: DestinationRoutingAssignment?,
+        currentCandidate: EvaluatedRouteCandidate? = nil,
+        bestCandidate: EvaluatedRouteCandidate?,
+        runnerUpCandidate: EvaluatedRouteCandidate?,
+        pinState: PinState,
+        phase: AdaptiveRoutingPhase,
+        monitoringAvailable: Bool
+    ) -> RouteSwitchDecision {
+        guard monitoringAvailable, let bestCandidate else {
+            return .holdCurrent(
+                RouteHoldOutcome(
+                    reason: .monitoringUnavailable,
+                    currentAssignment: currentAssignment,
+                    selectedCandidate: currentCandidate,
+                    runnerUpCandidate: runnerUpCandidate
+                )
+            )
+        }
+
+        guard let currentAssignment else {
+            return .switchRoute(
+                RouteSwitchOutcome(
+                    reason: .meaningfulGain,
+                    previousAssignment: nil,
+                    selectedCandidate: bestCandidate,
+                    runnerUpCandidate: runnerUpCandidate
+                )
+            )
+        }
+
+        if pinState.candidateID == currentAssignment.assignedProviderID {
+            return .holdCurrent(
+                RouteHoldOutcome(
+                    reason: .pinnedRoute,
+                    currentAssignment: currentAssignment,
+                    selectedCandidate: currentCandidate,
+                    runnerUpCandidate: runnerUpCandidate
+                )
+            )
+        }
+
+        if bestCandidate.freshness < staleFreshnessThreshold {
+            return .holdCurrent(
+                RouteHoldOutcome(
+                    reason: .staleEvidence,
+                    currentAssignment: currentAssignment,
+                    selectedCandidate: currentCandidate,
+                    runnerUpCandidate: runnerUpCandidate
+                )
+            )
+        }
+
+        if bestCandidate.confidence < minimumConfidence {
+            return .holdCurrent(
+                RouteHoldOutcome(
+                    reason: .weakConfidence,
+                    currentAssignment: currentAssignment,
+                    selectedCandidate: currentCandidate,
+                    runnerUpCandidate: runnerUpCandidate
+                )
+            )
+        }
+
+        if bestCandidate.candidate.routeContext.providerID == currentAssignment.assignedProviderID, phase == .monitoring {
+            return .holdCurrent(
+                RouteHoldOutcome(
+                    reason: .noViableBetterCandidate,
+                    currentAssignment: currentAssignment,
+                    selectedCandidate: currentCandidate,
+                    runnerUpCandidate: runnerUpCandidate
+                )
+            )
+        }
+
+        if (bestCandidate.stabilityScore ?? 0) < minimumStability {
+            return .holdCurrent(
+                RouteHoldOutcome(
+                    reason: .weakStability,
+                    currentAssignment: currentAssignment,
+                    selectedCandidate: currentCandidate,
+                    runnerUpCandidate: runnerUpCandidate
+                )
+            )
+        }
+
+        let currentLatency = currentCandidate?.latencyMS ?? currentAssignment.measuredLatencyMS ?? runnerUpCandidate?.latencyMS
+        let latencyGain = (currentLatency ?? bestCandidate.latencyMS ?? 0) - (bestCandidate.latencyMS ?? currentLatency ?? 0)
+        if latencyGain < switchThresholdMS {
+            return .holdCurrent(
+                RouteHoldOutcome(
+                    reason: .insignificantGain,
+                    currentAssignment: currentAssignment,
+                    selectedCandidate: currentCandidate,
+                    runnerUpCandidate: runnerUpCandidate
+                )
+            )
+        }
+
+        return .switchRoute(
+            RouteSwitchOutcome(
+                reason: .meaningfulGain,
+                previousAssignment: currentAssignment,
+                selectedCandidate: bestCandidate,
+                runnerUpCandidate: runnerUpCandidate
+            )
+        )
+    }
+}
+
 public enum AdaptiveRoutingPhase: String, Equatable, Sendable {
     case fastPass
     case monitoring
@@ -19,19 +204,16 @@ public protocol DestinationRoutingEvaluating: Sendable {
 }
 
 public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
-    public var switchThresholdMS: Double
-    public var minimumStability: Double
+    public var routeSwitchPolicy: RouteSwitchPolicy
     public var routeCandidateEvaluator: any RouteCandidateEvaluating
     public var environmentResolver: any EnvironmentContextResolving
 
     public init(
-        switchThresholdMS: Double = 8,
-        minimumStability: Double = 0.62,
+        routeSwitchPolicy: RouteSwitchPolicy = RouteSwitchPolicy(),
         routeCandidateEvaluator: any RouteCandidateEvaluating = RouteCandidateEvaluator(),
         environmentResolver: any EnvironmentContextResolving = StaticEnvironmentContextResolver()
     ) {
-        self.switchThresholdMS = switchThresholdMS
-        self.minimumStability = minimumStability
+        self.routeSwitchPolicy = routeSwitchPolicy
         self.routeCandidateEvaluator = routeCandidateEvaluator
         self.environmentResolver = environmentResolver
     }
@@ -73,60 +255,159 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
                 evidence: evidence
             )
             let ranked = evaluation.rankedCandidates
-            guard let leading = ranked.first else { continue }
             let previous = previousAssignments?[destination.id]
-            let selectedCandidate = evaluation.selectedCandidate ?? leading
+            guard let leading = ranked.first else {
+                if let previous {
+                    assignments.insert(
+                        preservedAssignment(
+                            previous: previous,
+                            currentCandidate: nil,
+                            runnerUpCandidate: nil,
+                            destinationLabel: destination.label,
+                            degradationReason: evaluation.degradationReason
+                        )
+                    )
+                }
+                continue
+            }
             let runnerUp = ranked.dropFirst().first
+            let bestCandidate = evaluation.selectedCandidate ?? leading
+            let currentCandidate = selectedHealth(for: previous, from: ranked)
 
-            let pinnedMatch = pinState.candidateID == previous?.assignedProviderID
-            let shouldHoldCurrent = shouldHoldCurrentAssignment(
-                previous: previous,
-                best: selectedCandidate,
-                runnerUp: runnerUp,
-                pinnedMatch: pinnedMatch
-            )
-
-            let selected = shouldHoldCurrent ? selectedHealth(for: previous, from: ranked) ?? selectedCandidate : selectedCandidate
             let source: AssignmentSource
             let status: DestinationAssignmentStatus
+            let holdReason: RouteHoldReason?
+            let switchReason: RouteSwitchReason?
             let summary: String
+            let routeContext: RouteContext
+            let assignedProviderLabel: String
+            let assignmentFreshness: Double?
+            let measuredLatencyMS: Double?
+            let failureRate: Double?
+            let stabilityScore: Double?
+            let fallbackCandidate: EvaluatedRouteCandidate?
 
-            if pinnedMatch, previous != nil {
-                source = .manualOverride
-                status = .pinned
-                summary = "Pinned route remains active for \(destination.label)."
-            } else if evaluation.isDegraded {
-                source = previous?.source ?? .initialDefault
-                status = .degraded
-                summary = evaluation.degradationReason ?? "Route evidence is too weak to select a healthy route."
-            } else if let previous, previous.assignedProviderID != selected.candidate.routeContext.providerID {
-                source = .automaticSelection
-                status = .switched
-                summary = "Switched \(destination.label) to \(selected.candidate.providerLabel) for lower latency and healthier routing."
-            } else if shouldHoldCurrent {
-                source = previous?.source ?? .initialDefault
-                status = .holding
-                summary = "Holding the current \(destination.label) route because the gain is too small or stability is weak."
+            if previous == nil {
+                routeContext = bestCandidate.candidate.routeContext
+                assignedProviderLabel = bestCandidate.candidate.providerLabel
+                assignmentFreshness = bestCandidate.freshness
+                measuredLatencyMS = bestCandidate.latencyMS
+                failureRate = bestCandidate.failureRate
+                stabilityScore = bestCandidate.stabilityScore
+                fallbackCandidate = resolvedAlternativeCandidate(
+                    primary: bestCandidate,
+                    secondary: runnerUp,
+                    excludingProviderID: bestCandidate.candidate.routeContext.providerID
+                )
+                source = .initialDefault
+                if evaluation.isDegraded {
+                    status = .degraded
+                    holdReason = .monitoringUnavailable
+                    switchReason = nil
+                    summary = evaluation.degradationReason ?? "Route evidence is too weak to select a healthy route."
+                } else {
+                    status = .monitoring
+                    holdReason = nil
+                    switchReason = nil
+                    summary = "Monitoring \(destination.label) on \(assignedProviderLabel) with the strongest current route health."
+                }
             } else {
-                source = previous == nil ? .initialDefault : .automaticSelection
-                status = phase == .fastPass ? .monitoring : .switched
-                summary = "Monitoring \(destination.label) on \(selected.candidate.providerLabel) with the strongest current route health."
+                let decision = routeSwitchPolicy.decide(
+                    currentAssignment: previous,
+                    currentCandidate: currentCandidate,
+                    bestCandidate: bestCandidate,
+                    runnerUpCandidate: runnerUp,
+                    pinState: pinState,
+                    phase: phase,
+                    monitoringAvailable: evaluation.isDegraded == false
+                )
+
+                switch decision {
+                case .switchRoute(let outcome):
+                    routeContext = outcome.selectedCandidate.candidate.routeContext
+                    assignedProviderLabel = outcome.selectedCandidate.candidate.providerLabel
+                    assignmentFreshness = outcome.selectedCandidate.freshness
+                    measuredLatencyMS = outcome.selectedCandidate.latencyMS
+                    failureRate = outcome.selectedCandidate.failureRate
+                    stabilityScore = outcome.selectedCandidate.stabilityScore
+                    fallbackCandidate = resolvedAlternativeCandidate(
+                        primary: outcome.runnerUpCandidate,
+                        secondary: currentCandidate,
+                        excludingProviderID: outcome.selectedCandidate.candidate.routeContext.providerID
+                    )
+                    source = .automaticSelection
+                    status = .switched
+                    holdReason = nil
+                    switchReason = outcome.reason
+                    summary = switchSummary(
+                        destinationLabel: destination.label,
+                        selectedProviderLabel: outcome.selectedCandidate.candidate.providerLabel,
+                        reason: outcome.reason
+                    )
+                case .holdCurrent(let outcome):
+                    if outcome.reason == .monitoringUnavailable, let previous {
+                        assignments.insert(
+                            preservedAssignment(
+                                previous: previous,
+                                currentCandidate: currentCandidate,
+                                runnerUpCandidate: runnerUp,
+                                destinationLabel: destination.label,
+                                degradationReason: evaluation.degradationReason
+                            )
+                        )
+                        continue
+                    }
+                    let heldRouteContext = outcome.selectedCandidate?.candidate.routeContext ?? outcome.currentAssignment?.routeContext ?? bestCandidate.candidate.routeContext
+                    let heldProviderLabel = outcome.selectedCandidate?.candidate.providerLabel ?? outcome.currentAssignment?.assignedProviderLabel ?? bestCandidate.candidate.providerLabel
+                    routeContext = heldRouteContext
+                    assignedProviderLabel = heldProviderLabel
+                    assignmentFreshness = outcome.selectedCandidate?.freshness ?? outcome.currentAssignment?.freshness
+                    measuredLatencyMS = outcome.selectedCandidate?.latencyMS ?? outcome.currentAssignment?.measuredLatencyMS
+                    failureRate = outcome.selectedCandidate?.failureRate ?? outcome.currentAssignment?.failureRate
+                    stabilityScore = outcome.selectedCandidate?.stabilityScore ?? outcome.currentAssignment?.stabilityScore
+                    fallbackCandidate = resolvedAlternativeCandidate(
+                        primary: bestCandidate,
+                        secondary: runnerUp,
+                        excludingProviderID: heldRouteContext.providerID
+                    )
+                    switch outcome.reason {
+                    case .pinnedRoute:
+                        source = .manualOverride
+                        status = .pinned
+                    case .monitoringUnavailable:
+                        source = previous?.source ?? .initialDefault
+                        status = .degraded
+                    default:
+                        source = previous?.source ?? .initialDefault
+                        status = .holding
+                    }
+                    holdReason = outcome.reason
+                    switchReason = nil
+                    summary = holdSummary(
+                        destinationLabel: destination.label,
+                        selectedProviderLabel: heldProviderLabel,
+                        reason: outcome.reason,
+                        degradationReason: evaluation.degradationReason
+                    )
+                }
             }
 
             let assignment = DestinationRoutingAssignment(
-                routeContext: selected.candidate.routeContext,
+                routeContext: routeContext,
                 mode: .auto,
-                assignedProviderLabel: selected.candidate.providerLabel,
+                assignedProviderLabel: assignedProviderLabel,
                 source: source,
                 assignedAt: now.timeIntervalSince1970,
-                freshness: selected.freshness,
+                freshness: assignmentFreshness,
                 status: status,
-                measuredLatencyMS: selected.latencyMS,
-                failureRate: selected.failureRate,
-                stabilityScore: selected.stabilityScore,
+                holdReason: holdReason,
+                switchReason: switchReason,
+                measuredLatencyMS: measuredLatencyMS,
+                failureRate: failureRate,
+                stabilityScore: stabilityScore,
                 recentChangeSummary: summary,
-                alternativeProviderID: runnerUp?.candidate.routeContext.providerID,
-                alternativeProviderLabel: runnerUp?.candidate.providerLabel
+                alternativeProviderID: fallbackCandidate?.candidate.routeContext.providerID,
+                alternativeProviderLabel: fallbackCandidate?.candidate.providerLabel
             )
             assignments.insert(assignment)
         }
@@ -138,22 +419,39 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
         return assignments
     }
 
-    private func shouldHoldCurrentAssignment(
-        previous: DestinationRoutingAssignment?,
-        best: EvaluatedRouteCandidate,
-        runnerUp: EvaluatedRouteCandidate?,
-        pinnedMatch: Bool
-    ) -> Bool {
-        guard let previous else { return false }
-        if pinnedMatch { return true }
-        if best.candidate.routeContext.providerID == previous.assignedProviderID { return false }
+    private func preservedAssignment(
+        previous: DestinationRoutingAssignment,
+        currentCandidate: EvaluatedRouteCandidate?,
+        runnerUpCandidate: EvaluatedRouteCandidate?,
+        destinationLabel: String,
+        degradationReason: String?
+    ) -> DestinationRoutingAssignment {
+        let selectedRouteContext = currentCandidate?.candidate.routeContext ?? previous.routeContext
+        let selectedProviderLabel = currentCandidate?.candidate.providerLabel ?? previous.assignedProviderLabel
 
-        let bestLatency = best.latencyMS ?? 999
-        let currentLatency = previous.measuredLatencyMS ?? (runnerUp?.latencyMS ?? bestLatency)
-        let latencyGain = currentLatency - bestLatency
-        let stability = best.stabilityScore ?? 0
-
-        return latencyGain < switchThresholdMS || stability < minimumStability
+        return DestinationRoutingAssignment(
+            routeContext: selectedRouteContext,
+            mode: previous.mode,
+            assignedProviderLabel: selectedProviderLabel,
+            source: previous.source,
+            assignedAt: previous.assignedAt,
+            evidenceLinkSnapshotID: previous.evidenceLinkSnapshotID,
+            freshness: currentCandidate?.freshness ?? previous.freshness,
+            status: .degraded,
+            holdReason: .monitoringUnavailable,
+            switchReason: nil,
+            measuredLatencyMS: currentCandidate?.latencyMS ?? previous.measuredLatencyMS,
+            failureRate: currentCandidate?.failureRate ?? previous.failureRate,
+            stabilityScore: currentCandidate?.stabilityScore ?? previous.stabilityScore,
+            recentChangeSummary: holdSummary(
+                destinationLabel: destinationLabel,
+                selectedProviderLabel: selectedProviderLabel,
+                reason: .monitoringUnavailable,
+                degradationReason: degradationReason
+            ),
+            alternativeProviderID: runnerUpCandidate?.candidate.routeContext.providerID,
+            alternativeProviderLabel: runnerUpCandidate?.candidate.providerLabel
+        )
     }
 
     private func selectedHealth(
@@ -162,6 +460,55 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
     ) -> EvaluatedRouteCandidate? {
         guard let previous else { return nil }
         return ranked.first(where: { $0.candidate.routeContext.providerID == previous.assignedProviderID })
+    }
+
+    private func resolvedAlternativeCandidate(
+        primary: EvaluatedRouteCandidate?,
+        secondary: EvaluatedRouteCandidate?,
+        excludingProviderID: String
+    ) -> EvaluatedRouteCandidate? {
+        if let primary, primary.candidate.routeContext.providerID != excludingProviderID {
+            return primary
+        }
+        if let secondary, secondary.candidate.routeContext.providerID != excludingProviderID {
+            return secondary
+        }
+        return nil
+    }
+
+    private func switchSummary(
+        destinationLabel: String,
+        selectedProviderLabel: String,
+        reason: RouteSwitchReason
+    ) -> String {
+        switch reason {
+        case .meaningfulGain:
+            return "Switched \(destinationLabel) to \(selectedProviderLabel) because the measured gain is now clearly meaningful."
+        }
+    }
+
+    private func holdSummary(
+        destinationLabel: String,
+        selectedProviderLabel: String,
+        reason: RouteHoldReason,
+        degradationReason: String?
+    ) -> String {
+        switch reason {
+        case .pinnedRoute:
+            return "Pinned route remains active for \(destinationLabel)."
+        case .insignificantGain:
+            return "Holding \(destinationLabel) on \(selectedProviderLabel) because the measured gain is too small to justify a switch."
+        case .weakConfidence:
+            return "Holding \(destinationLabel) on \(selectedProviderLabel) until route confidence is stronger."
+        case .staleEvidence:
+            return "Holding \(destinationLabel) on \(selectedProviderLabel) because the evidence is getting stale."
+        case .weakStability:
+            return "Holding \(destinationLabel) on \(selectedProviderLabel) because route stability is still too weak."
+        case .noViableBetterCandidate:
+            return "Holding \(destinationLabel) on \(selectedProviderLabel) because no clearly better candidate is available."
+        case .monitoringUnavailable:
+            return degradationReason ?? "Monitoring for \(destinationLabel) is temporarily unavailable, so RockeRoom is holding the current route."
+        }
     }
 
     private func buildRouteCandidates(

@@ -19,6 +19,7 @@ It does **not** seed benchmarked, pinned, stale, or tunnel-failure end states an
 - build explicit route candidates from environment, destination, provider, and strategy
 - persist the best current route per curated destination
 - begin foreground adaptive monitoring while the app stays active
+- restore later as "monitoring available in foreground" rather than pretending the loop kept running in background
 
 The route under test should be understood as a runtime context, not just a destination label:
 
@@ -78,6 +79,16 @@ The harness seeds the following state through `LiveE2EScenario.destinationAssign
 - `stale-or-refresh` — Evidence is stale and a refresh is required before acting
 - `failed-reassignment` — Route reassignment failed and the app recovered to a safe state
 
+Sprint 3 adds an explicit switch-or-hold vocabulary that should stay aligned across code, docs, and seeded scenarios:
+
+- switch because the measured gain is clearly meaningful
+- hold because the route is pinned
+- hold because the gain is too small
+- hold because confidence or stability is still weak
+- hold because evidence is stale
+- hold because no clearly better candidate is available
+- degrade because monitoring is temporarily unavailable
+
 The runner is state-aware. It uses the normal view-model methods for import, benchmark, tab selection, and pinning rather than bypassing product code.
 
 Sprint 2 makes the benchmark contract more specific: benchmark-path assignments now come from shared route-candidate comparison, not only destination-scoped helper heuristics. The benchmark path should therefore be read as:
@@ -95,9 +106,9 @@ The destination routing scenarios define a contract matrix for later sprint impl
 |---|---|---|---|
 | `auto-mode-apply` | Strong + fresh | Auto | App auto-applies better route after fast pass or monitoring |
 | `manual-mode-advisory` | Any | Manual | App surfaces advisory, user decides |
-| `override-or-pin` | Any | Auto or Manual | Pin/override suppresses auto-switch |
-| `stale-or-refresh` | Stale | Any | Hold until fresh benchmark run |
-| `failed-reassignment` | — | Any | Recover to previous known-good state |
+| `override-or-pin` | Any | Auto or Manual | Pin/override suppresses auto-switch and records a pinned hold |
+| `stale-or-refresh` | Stale | Any | Hold until fresh benchmark run with stale-evidence messaging |
+| `failed-reassignment` | — | Any | Recover to previous known-good state with degraded monitoring honesty |
 
 Each scenario must remain launch-replayable and idempotent across repeated foreground transitions. Degraded scenarios (not yet implemented) must not corrupt the app state.
 
@@ -178,7 +189,7 @@ Checks to inspect per flow:
 
 - `import-home`: setup screen disappears and `Home` tab shell appears
 - `benchmark-home`: recommendation card shows measured state, adaptive routing summary, route-context-aware messaging, and populated metrics
-- `expert-console`: ranked candidates render and route-context control state is visible
+- `expert-console`: route-context inspector, control-state explanation, recent-routing history, and ranked candidates are visible
 - `pin-unpin-home`: app returns to `Home` with no pinned banner and recommendation restored
 - `stale-hint`: refresh hint is visible after relaunch with old evidence
 - `stale-refresh`: refresh hint clears after rerunning the benchmark
@@ -190,15 +201,17 @@ Checks to inspect per flow:
 These checks validate the destination-routing state contract in Sprint 2 and later. The harness seeds persisted `DestinationRoutingAssignments` into the store before `restoreState()` so the app can restore routing context across launches.
 
 - `auto-mode-apply`: app restores with `destinationAssignment.mode == .auto` and shows recommended setup or switched route state
-- `manual-mode-advisory`: app restores with `destinationAssignment.mode == .manual` and surfaces expert console
+- `manual-mode-advisory`: app restores with `destinationAssignment.mode == .manual` and surfaces expert console with route-context and control-state sections
 - `override-or-pin`: app restores with pinned provider active and shows pinned banner
 - `stale-or-refresh`: app restores with stale evidence and shows refresh hint
 - `failed-reassignment`: app restores with recoverable failure state
+- after restore with prior assignments: monitoring reads as available in foreground before the app becomes active again
 
 As the route-context model expands, these checks should also prove:
 
-- the UI can explain current provider and strategy for a destination
+- the UI can explain current environment, provider, and strategy for a destination
 - switch versus hold reasons are visible in plain network terms
+- recent route-change or steady-state history is visible without opening raw diagnostics
 - environment-sensitive reassessment is visible when the product adds that dimension explicitly
 
 ## Limitations
