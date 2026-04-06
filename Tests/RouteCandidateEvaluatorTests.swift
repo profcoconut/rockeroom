@@ -209,6 +209,84 @@ final class RouteCandidateEvaluatorTests: XCTestCase {
         XCTAssertEqual(assignments["openai"]?.routeContext.environment, .wifiHome)
         XCTAssertEqual(assignments["openai"]?.routeContext.strategy, .fallbackProxy)
     }
+
+    func testDestinationFastPassRunnerKeepsPreviousAssignmentWhenHoldDecisionLacksCurrentProbe() async {
+        let bestCandidate = EvaluatedRouteCandidate(
+            candidate: RouteCandidate(
+                routeContext: RouteContext(
+                    environment: .wifiHome,
+                    destinationID: "openai",
+                    providerID: "fast",
+                    strategy: .rule
+                ),
+                providerLabel: "Fast Relay"
+            ),
+            score: 0.88,
+            confidence: 0.91,
+            freshness: 0.4,
+            isPartial: false,
+            latencyMS: 36,
+            failureRate: 0.2,
+            stabilityScore: 0.86,
+            reachabilityScore: 0.97
+        )
+        let evaluator = StubRouteCandidateEvaluator(
+            evaluation: RouteCandidateEvaluation(
+                rankedCandidates: [bestCandidate],
+                selectedCandidate: bestCandidate
+            )
+        )
+        let runner = DestinationFastPassRunner(
+            routeSwitchPolicy: RouteSwitchPolicy(staleFreshnessThreshold: 0.5),
+            routeCandidateEvaluator: evaluator,
+            environmentResolver: StaticEnvironmentContextResolver(environment: .wifiHome)
+        )
+        let subscription = SubscriptionConfig(
+            sourceURL: URL(string: "https://example.com/sub")!,
+            proxies: [ClashProxy(id: "fast", name: "Fast Relay", type: "ss")]
+        )
+        var previousAssignments = DestinationRoutingAssignments(
+            sourceURL: subscription.sourceURL.absoluteString,
+            selectedDestinationID: "openai"
+        )
+        previousAssignments.insert(
+            DestinationRoutingAssignment(
+                routeContext: RouteContext(
+                    environment: .wifiHome,
+                    destinationID: "openai",
+                    providerID: "stable",
+                    strategy: .fallbackProxy
+                ),
+                mode: .auto,
+                assignedProviderLabel: "Stable Relay",
+                source: .automaticSelection,
+                assignedAt: 900,
+                freshness: 0.92,
+                status: .monitoring,
+                measuredLatencyMS: 44,
+                failureRate: 0.1,
+                stabilityScore: 0.9,
+                recentChangeSummary: "Monitoring OpenAI on Stable Relay."
+            )
+        )
+
+        let assignments = await runner.evaluate(
+            subscription: subscription,
+            sourceURL: subscription.sourceURL,
+            snapshot: nil,
+            destinations: [RoutingDestination(slug: "openai", label: "OpenAI", ruleFamily: "ai", isFallback: false)],
+            previousAssignments: previousAssignments,
+            pinState: .none,
+            phase: .monitoring,
+            now: Date(timeIntervalSince1970: 1000)
+        )
+
+        XCTAssertEqual(assignments["openai"]?.assignedProviderID, "stable")
+        XCTAssertEqual(assignments["openai"]?.assignedProviderLabel, "Stable Relay")
+        XCTAssertEqual(assignments["openai"]?.status, .holding)
+        XCTAssertEqual(assignments["openai"]?.holdReason, .staleEvidence)
+        XCTAssertEqual(assignments["openai"]?.alternativeProviderID, "fast")
+    }
 }
 
 final class RouteSwitchPolicyTests: XCTestCase {

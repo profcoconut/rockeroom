@@ -113,7 +113,7 @@ public struct RouteSwitchPolicy: Sendable {
                 RouteHoldOutcome(
                     reason: .pinnedRoute,
                     currentAssignment: currentAssignment,
-                    selectedCandidate: currentCandidate ?? bestCandidate,
+                    selectedCandidate: currentCandidate,
                     runnerUpCandidate: runnerUpCandidate
                 )
             )
@@ -124,7 +124,7 @@ public struct RouteSwitchPolicy: Sendable {
                 RouteHoldOutcome(
                     reason: .staleEvidence,
                     currentAssignment: currentAssignment,
-                    selectedCandidate: currentCandidate ?? bestCandidate,
+                    selectedCandidate: currentCandidate,
                     runnerUpCandidate: runnerUpCandidate
                 )
             )
@@ -135,7 +135,7 @@ public struct RouteSwitchPolicy: Sendable {
                 RouteHoldOutcome(
                     reason: .weakConfidence,
                     currentAssignment: currentAssignment,
-                    selectedCandidate: currentCandidate ?? bestCandidate,
+                    selectedCandidate: currentCandidate,
                     runnerUpCandidate: runnerUpCandidate
                 )
             )
@@ -146,7 +146,7 @@ public struct RouteSwitchPolicy: Sendable {
                 RouteHoldOutcome(
                     reason: .noViableBetterCandidate,
                     currentAssignment: currentAssignment,
-                    selectedCandidate: currentCandidate ?? bestCandidate,
+                    selectedCandidate: currentCandidate,
                     runnerUpCandidate: runnerUpCandidate
                 )
             )
@@ -157,7 +157,7 @@ public struct RouteSwitchPolicy: Sendable {
                 RouteHoldOutcome(
                     reason: .weakStability,
                     currentAssignment: currentAssignment,
-                    selectedCandidate: currentCandidate ?? bestCandidate,
+                    selectedCandidate: currentCandidate,
                     runnerUpCandidate: runnerUpCandidate
                 )
             )
@@ -170,7 +170,7 @@ public struct RouteSwitchPolicy: Sendable {
                 RouteHoldOutcome(
                     reason: .insignificantGain,
                     currentAssignment: currentAssignment,
-                    selectedCandidate: currentCandidate ?? bestCandidate,
+                    selectedCandidate: currentCandidate,
                     runnerUpCandidate: runnerUpCandidate
                 )
             )
@@ -268,10 +268,26 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
             let holdReason: RouteHoldReason?
             let switchReason: RouteSwitchReason?
             let summary: String
-            let selected: EvaluatedRouteCandidate
+            let routeContext: RouteContext
+            let assignedProviderLabel: String
+            let assignmentFreshness: Double?
+            let measuredLatencyMS: Double?
+            let failureRate: Double?
+            let stabilityScore: Double?
+            let fallbackCandidate: EvaluatedRouteCandidate?
 
             if previous == nil {
-                selected = bestCandidate
+                routeContext = bestCandidate.candidate.routeContext
+                assignedProviderLabel = bestCandidate.candidate.providerLabel
+                assignmentFreshness = bestCandidate.freshness
+                measuredLatencyMS = bestCandidate.latencyMS
+                failureRate = bestCandidate.failureRate
+                stabilityScore = bestCandidate.stabilityScore
+                fallbackCandidate = resolvedAlternativeCandidate(
+                    primary: bestCandidate,
+                    secondary: runnerUp,
+                    excludingProviderID: bestCandidate.candidate.routeContext.providerID
+                )
                 source = .initialDefault
                 if evaluation.isDegraded {
                     status = .degraded
@@ -282,7 +298,7 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
                     status = .monitoring
                     holdReason = nil
                     switchReason = nil
-                    summary = "Monitoring \(destination.label) on \(selected.candidate.providerLabel) with the strongest current route health."
+                    summary = "Monitoring \(destination.label) on \(assignedProviderLabel) with the strongest current route health."
                 }
             } else {
                 let decision = routeSwitchPolicy.decide(
@@ -297,7 +313,17 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
 
                 switch decision {
                 case .switchRoute(let outcome):
-                    selected = outcome.selectedCandidate
+                    routeContext = outcome.selectedCandidate.candidate.routeContext
+                    assignedProviderLabel = outcome.selectedCandidate.candidate.providerLabel
+                    assignmentFreshness = outcome.selectedCandidate.freshness
+                    measuredLatencyMS = outcome.selectedCandidate.latencyMS
+                    failureRate = outcome.selectedCandidate.failureRate
+                    stabilityScore = outcome.selectedCandidate.stabilityScore
+                    fallbackCandidate = resolvedAlternativeCandidate(
+                        primary: outcome.runnerUpCandidate,
+                        secondary: currentCandidate,
+                        excludingProviderID: outcome.selectedCandidate.candidate.routeContext.providerID
+                    )
                     source = .automaticSelection
                     status = .switched
                     holdReason = nil
@@ -308,7 +334,19 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
                         reason: outcome.reason
                     )
                 case .holdCurrent(let outcome):
-                    selected = outcome.selectedCandidate ?? currentCandidate ?? bestCandidate
+                    let heldRouteContext = outcome.selectedCandidate?.candidate.routeContext ?? outcome.currentAssignment?.routeContext ?? bestCandidate.candidate.routeContext
+                    let heldProviderLabel = outcome.selectedCandidate?.candidate.providerLabel ?? outcome.currentAssignment?.assignedProviderLabel ?? bestCandidate.candidate.providerLabel
+                    routeContext = heldRouteContext
+                    assignedProviderLabel = heldProviderLabel
+                    assignmentFreshness = outcome.selectedCandidate?.freshness ?? outcome.currentAssignment?.freshness
+                    measuredLatencyMS = outcome.selectedCandidate?.latencyMS ?? outcome.currentAssignment?.measuredLatencyMS
+                    failureRate = outcome.selectedCandidate?.failureRate ?? outcome.currentAssignment?.failureRate
+                    stabilityScore = outcome.selectedCandidate?.stabilityScore ?? outcome.currentAssignment?.stabilityScore
+                    fallbackCandidate = resolvedAlternativeCandidate(
+                        primary: bestCandidate,
+                        secondary: runnerUp,
+                        excludingProviderID: heldRouteContext.providerID
+                    )
                     switch outcome.reason {
                     case .pinnedRoute:
                         source = .manualOverride
@@ -324,7 +362,7 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
                     switchReason = nil
                     summary = holdSummary(
                         destinationLabel: destination.label,
-                        selectedProviderLabel: selected.candidate.providerLabel,
+                        selectedProviderLabel: heldProviderLabel,
                         reason: outcome.reason,
                         degradationReason: evaluation.degradationReason
                     )
@@ -332,21 +370,21 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
             }
 
             let assignment = DestinationRoutingAssignment(
-                routeContext: selected.candidate.routeContext,
+                routeContext: routeContext,
                 mode: .auto,
-                assignedProviderLabel: selected.candidate.providerLabel,
+                assignedProviderLabel: assignedProviderLabel,
                 source: source,
                 assignedAt: now.timeIntervalSince1970,
-                freshness: selected.freshness,
+                freshness: assignmentFreshness,
                 status: status,
                 holdReason: holdReason,
                 switchReason: switchReason,
-                measuredLatencyMS: selected.latencyMS,
-                failureRate: selected.failureRate,
-                stabilityScore: selected.stabilityScore,
+                measuredLatencyMS: measuredLatencyMS,
+                failureRate: failureRate,
+                stabilityScore: stabilityScore,
                 recentChangeSummary: summary,
-                alternativeProviderID: runnerUp?.candidate.routeContext.providerID,
-                alternativeProviderLabel: runnerUp?.candidate.providerLabel
+                alternativeProviderID: fallbackCandidate?.candidate.routeContext.providerID,
+                alternativeProviderLabel: fallbackCandidate?.candidate.providerLabel
             )
             assignments.insert(assignment)
         }
@@ -364,6 +402,20 @@ public struct DestinationFastPassRunner: DestinationRoutingEvaluating {
     ) -> EvaluatedRouteCandidate? {
         guard let previous else { return nil }
         return ranked.first(where: { $0.candidate.routeContext.providerID == previous.assignedProviderID })
+    }
+
+    private func resolvedAlternativeCandidate(
+        primary: EvaluatedRouteCandidate?,
+        secondary: EvaluatedRouteCandidate?,
+        excludingProviderID: String
+    ) -> EvaluatedRouteCandidate? {
+        if let primary, primary.candidate.routeContext.providerID != excludingProviderID {
+            return primary
+        }
+        if let secondary, secondary.candidate.routeContext.providerID != excludingProviderID {
+            return secondary
+        }
+        return nil
     }
 
     private func switchSummary(
