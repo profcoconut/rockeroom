@@ -28,17 +28,24 @@ struct RockeRoomApp: App {
                 expertConsoleViewModel.refresh(
                     snapshot: autoModeViewModel.snapshot,
                     recommendationState: autoModeViewModel.recommendationState,
-                    pinState: autoModeViewModel.pinState
+                    pinState: autoModeViewModel.pinState,
+                    destinationAssignments: autoModeViewModel.destinationAssignment,
+                    monitoringStatusText: autoModeViewModel.monitoringStatusText
                 )
             }
             .onChange(of: scenePhase) { _, newPhase in
-                guard newPhase == .active else { return }
                 Task {
-                    await autoModeViewModel.handleAppDidBecomeActive()
+                    if newPhase == .active {
+                        await autoModeViewModel.handleAppDidBecomeActive()
+                    } else {
+                        await autoModeViewModel.handleAppDidEnterBackground()
+                    }
                     expertConsoleViewModel.refresh(
                         snapshot: autoModeViewModel.snapshot,
                         recommendationState: autoModeViewModel.recommendationState,
-                        pinState: autoModeViewModel.pinState
+                        pinState: autoModeViewModel.pinState,
+                        destinationAssignments: autoModeViewModel.destinationAssignment,
+                        monitoringStatusText: autoModeViewModel.monitoringStatusText
                     )
                 }
             }

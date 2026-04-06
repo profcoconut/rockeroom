@@ -66,6 +66,35 @@ final class DestinationRoutingAssignmentStoreTests: XCTestCase {
         XCTAssertEqual(restored?["openai"]?.routeContext.strategy, .fallbackProxy)
     }
 
+    func testStorePreservesExplicitHoldAndSwitchReasons() async {
+        let backingStore = InMemoryDataStore()
+        let store = DestinationRoutingAssignmentStore(store: backingStore)
+
+        var assignments = DestinationRoutingAssignments(sourceURL: "https://example.com/sub", selectedDestinationID: "openai")
+        assignments.insert(
+            DestinationRoutingAssignment(
+                destinationID: "openai",
+                mode: .auto,
+                assignedProviderID: "hk-01",
+                assignedProviderLabel: "Hong Kong 01",
+                strategyName: "rule",
+                source: .automaticSelection,
+                assignedAt: 1000,
+                freshness: 0.9,
+                status: .holding,
+                holdReason: .staleEvidence,
+                recentChangeSummary: "Holding OpenAI on Hong Kong 01 because the evidence is getting stale."
+            )
+        )
+
+        await store.save(assignments)
+
+        let restored = await store.current()
+        XCTAssertEqual(restored?["openai"]?.status, .holding)
+        XCTAssertEqual(restored?["openai"]?.holdReason, .staleEvidence)
+        XCTAssertNil(restored?["openai"]?.switchReason)
+    }
+
     func testStorePersistsMultipleAssignments() async {
         let backingStore = InMemoryDataStore()
         let store = DestinationRoutingAssignmentStore(store: backingStore)
